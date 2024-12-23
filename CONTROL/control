@@ -1,0 +1,9 @@
+Package: enigma2-plugin-extensions-epgimport
+Version: 99.0
+Section: misc
+Priority: optional
+Architecture: all
+Maintainer: *
+Description: EPG Import
+Source: *
+Homepage: *
