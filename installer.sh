@@ -125,10 +125,11 @@ fi
 ## Check and update source from doglover3920
 # TMPSources=/var/volatile/tmp/EPGimport-Sources-main
 mkdir -p $TMPSources
+mkdir -p '/etc/epgimport'
 cd $TMPSources
 wget --no-check-certificate 'https://github.com/doglover3920/EPGimport-Sources/archive/refs/heads/main.tar.gz'
 tar -xzf main.tar.gz
-cp -r $TMPSources/EPGimport-Sources-main/* '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/source/'
+cp -r $TMPSources/EPGimport-Sources-main/* '/etc/epgimport'
 set +e
 cd
 sleep 2

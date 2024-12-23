@@ -355,11 +355,11 @@ class EPGImportConfig(ConfigListScreen, Screen):
 			{
 				"red": self.keyRed,
 				"green": self.keyGreen,
-				"yellow": self.doimport,           # Tasto giallo - Importazione
-				"blue": self.dosources,            # Tasto blu - Fonti
+				"yellow": self.doimport,		   # Tasto giallo - Importazione
+				"blue": self.dosources,			   # Tasto blu - Fonti
 				"cancel": self.extnok,
 				"ok": self.keyOk,
-				"log": self.keyInfo,               # Tasto log - Info aggiuntive
+				"log": self.keyInfo,			   # Tasto log - Info aggiuntive
 				"contextMenu": self.openMenu
 			},
 			-1
@@ -721,11 +721,11 @@ class EPGImportSources(Screen):
 			{
 				"red": self.cancel,
 				"green": self.save,
-				"yellow": self.do_import,        # Tasto giallo - Importazione
-				"blue": self.git_import,         # Tasto blu - Importazione tramite Git
+				"yellow": self.do_import,		 # Tasto giallo - Importazione
+				"blue": self.git_import,		 # Tasto blu - Importazione tramite Git
 				"save": self.save,
 				"cancel": self.cancel,
-				"ok": self["list"].toggleSelection  # Tasto OK - Toggle selezione nella lista
+				"ok": self["list"].toggleSelection	# Tasto OK - Toggle selezione nella lista
 			},
 			-2
 		)
@@ -765,7 +765,28 @@ class EPGImportSources(Screen):
 			MessageBox.TYPE_INFO,
 			timeout=5
 		)
+		self.cfg_imp()
 		self.save()
+
+	def cfg_imp(self):
+		self.source_cfg = resolveFilename(SCOPE_PLUGINS, "Extensions/EPGImport/epgimport.conf")
+		dest_cfg = '/etc/enigma2'  # Configurazione destinazione
+		if not os.path.exists(self.source_path):
+			print("Folder not exist:", self.source_path)
+			return
+		if not os.path.exists(CONFIG_PATH):
+			try:
+				os.makedirs(CONFIG_PATH)
+			except Exception as e:
+				print("Error creating directory:", CONFIG_PATH, ":", str(e))
+				return
+		if not os.path.exists(os.path.join(dest_cfg, 'epgimport.conf')):
+			try:
+				shutil.copy(self.source_cfg, dest_cfg)
+				print("File copied:", self.source_cfg, "->", dest_cfg)
+			except Exception as e:
+				print("Error while copying configuration file:", self.source_cfg, ":", str(e))
+				return
 
 	"""
 	def git_import(self):
