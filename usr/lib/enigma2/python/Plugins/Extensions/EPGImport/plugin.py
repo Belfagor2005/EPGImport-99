@@ -350,16 +350,20 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self["key_yellow"] = Button(_("Manual"))
 		self["key_blue"] = Button(_("Sources"))
 		self["description"] = Label("")
-		self["setupActions"] = ActionMap(["SetupActions", "ColorActions", "TimerEditActions", "MovieSelectionActions"],
-										 {"red": self.keyRed,
-										  "green": self.keyGreen,
-										  "yellow": self.doimport,
-										  "blue": self.dosources,
-										  "cancel": self.extnok,
-										  "ok": self.keyOk,
-										  "log": self.keyInfo,
-										  "contextMenu": self.openMenu}, -1)
-		# ConfigListScreen.__init__(self, [], session)
+		self["setupActions"] = ActionMap(
+			["SetupActions", "ColorActions", "TimerEditActions", "MovieSelectionActions"],
+			{
+				"red": self.keyRed,
+				"green": self.keyGreen,
+				"yellow": self.doimport,           # Tasto giallo - Importazione
+				"blue": self.dosources,            # Tasto blu - Fonti
+				"cancel": self.extnok,
+				"ok": self.keyOk,
+				"log": self.keyInfo,               # Tasto log - Info aggiuntive
+				"contextMenu": self.openMenu
+			},
+			-1
+		)
 		self.lastImportResult = None
 		self.list = []
 		self.onChangedEntry = []
@@ -375,7 +379,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self.updateStatus()
 		self.onLayoutFinish.append(self.createSummary)
 
-	# for summary:
 	def changedEntry(self):
 		for x in self.onChangedEntry:
 			x()
@@ -494,11 +497,9 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		if self.EPG.shutdown.value:
 			self.EPG.standby_afterwakeup.value = False
 			self.EPG.repeat_import.value = 0
-		# self.EPG.save()
 		if self.prev_onlybouquet != config.plugins.epgimport.import_onlybouquet.value or (autoStartTimer is not None and autoStartTimer.prev_multibouquet != config.usage.multibouquet.value):
 			EPGConfig.channelCache = {}
 		self.save()
-		# self.close(True)
 
 	def save(self):
 		if self["config"].isChanged():
@@ -506,7 +507,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 				x[1].save()
 			configfile.save()
 			self.EPG.save()
-			# self.session.open(MessageBox, _("Settings saved successfully !"), MessageBox.TYPE_INFO, timeout=5)
 		self.close(True)
 
 	def keyLeft(self):
@@ -536,9 +536,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 			return
 
 	def openDirectoryBrowser(self, path, itemcfg):
-		# from Components.config import ConfigLocations
 		try:
-			# bookmarks = ConfigLocations(default=[config.misc.epgcache_filename.value]) if hasattr(config.misc.epgcache_filename, "value") else ConfigLocations()
 			callback_map = {
 				"pathdb": self.openDirectoryBrowserCB(config.misc.epgcache_filename),
 			}
@@ -584,7 +582,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		if lastImportResult and (lastImportResult != self.lastImportResult):
 			start, count = lastImportResult
 			try:
-				# Assicurati che `start` sia un intero (timestamp)
 				if isinstance(start, str):
 					start = time.mktime(time.strptime(start, "%Y-%m-%d %H:%M:%S"))
 				elif not isinstance(start, (int, float)):
@@ -622,7 +619,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		if not sources:
 			self.session.open(MessageBox, _("No active EPG sources found, nothing to do"), MessageBox.TYPE_INFO, timeout=10, close_on_any_key=True)
 			return
-		# make it a stack, first on top.
 		sources.reverse()
 		epgimport.sources = sources
 		self.session.openWithCallback(self.do_import_callback, MessageBox, _("EPGImport\nImport of epg data will start.\nThis may take a few minutes.\nIs this ok?"), MessageBox.TYPE_YESNO, timeout=15, default=True)
@@ -647,7 +643,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self.session.openWithCallback(self.sourcesDone, EPGImportSources)
 
 	def sourcesDone(self, confirmed, sources, cfg):
-		# Called with True and list of config items on Okay.
 		print("sourcesDone(): ", confirmed, sources, file=log)
 		if cfg is not None:
 			self.doimport(one_source=cfg)
@@ -721,38 +716,90 @@ class EPGImportSources(Screen):
 		else:
 			self["key_yellow"].hide()
 			self["key_blue"].show()
-		self["setupActions"] = ActionMap(["SetupActions", "ColorActions"],
-										 {"red": self.cancel,
-										  "green": self.save,
-										  "yellow": self.do_import,
-										  "blue": self.git_import,
-										  "save": self.save,
-										  "cancel": self.cancel,
-										  "ok": self["list"].toggleSelection}, -2)
+		self["setupActions"] = ActionMap(
+			["SetupActions", "ColorActions"],
+			{
+				"red": self.cancel,
+				"green": self.save,
+				"yellow": self.do_import,        # Tasto giallo - Importazione
+				"blue": self.git_import,         # Tasto blu - Importazione tramite Git
+				"save": self.save,
+				"cancel": self.cancel,
+				"ok": self["list"].toggleSelection  # Tasto OK - Toggle selezione nella lista
+			},
+			-2
+		)
 
+	def git_import(self):
+		self.session.openWithCallback(
+			self.install_update,
+			MessageBox,
+			_("Do you want to update Source now?"),
+			MessageBox.TYPE_YESNO
+		)
+
+	def install_update(self, answer=False):
+		if answer:
+			installer_url = "https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer_source.sh"
+			cmd = "wget -q --no-check-certificate " + installer_url + " -O - | /bin/bash"
+			self.session.open(
+				Console,
+				_("Upgrading..."),
+				cmdlist=[cmd],
+				finishedCallback=self.myCallback,
+				closeOnSuccess=False
+			)
+		else:
+			self.session.open(
+				MessageBox,
+				_("Update Aborted!"),
+				MessageBox.TYPE_INFO,
+				timeout=3
+			)
+
+	def myCallback(self, result=None):
+		print("result:", result)
+		self.session.open(
+			MessageBox,
+			_("Source files Imported!"),
+			MessageBox.TYPE_INFO,
+			timeout=5
+		)
+		self.save()
+
+	"""
 	def git_import(self):
 		self.source_path = resolveFilename(SCOPE_PLUGINS, "Extensions/EPGImport/source")
 		self.source_cfg = resolveFilename(SCOPE_PLUGINS, "Extensions/EPGImport/epgimport.conf")
-		dest_cfg = '/etc/enigma2'  # os.path.join(self.source_cfg, '/etc/enigma2')
+		dest_cfg = '/etc/enigma2'  # Configurazione destinazione
 		if not os.path.exists(self.source_path):
 			print("Folder not exist:", self.source_path)
 			return
-		import shutil
 		if not os.path.exists(CONFIG_PATH):
-			os.makedirs(CONFIG_PATH)
-		if not os.path.exists(dest_cfg + '/epgimport.conf'):
-			shutil.copy(self.source_cfg, dest_cfg)
+			try:
+				os.makedirs(CONFIG_PATH)
+			except Exception as e:
+				print("Error creating directory:", CONFIG_PATH, ":", str(e))
+				return
+		if not os.path.exists(os.path.join(dest_cfg, 'epgimport.conf')):
+			try:
+				shutil.copy(self.source_cfg, dest_cfg)
+				print("File copied:", self.source_cfg, "->", dest_cfg)
+			except Exception as e:
+				print("Error while copying configuration file:", self.source_cfg, ":", str(e))
+				return
 		for filename in os.listdir(self.source_path):
 			source_file = os.path.join(self.source_path, filename)
 			dest_file = os.path.join(CONFIG_PATH, filename)
 			if os.path.isfile(source_file):
 				try:
 					shutil.copy(source_file, dest_file)
-					print("File copy:", source_file, "->", dest_file)
+					print("File copied:", source_file, "->", dest_file)
 				except Exception as e:
-					print("Error while copy", source_file, ":", str(e))
-		self.session.open(MessageBox, _("Source files Imported !"), MessageBox.TYPE_INFO, timeout=5)
+					print("Error while copying file:", source_file, ":", str(e))
+		self.session.open(MessageBox, _("Source files Imported!"), MessageBox.TYPE_INFO, timeout=5)
 		self.save()
+	"""
 
 	def save(self):
 		# Make the entries unique through a set
@@ -799,12 +846,17 @@ class EPGImportProfile(ConfigListScreen, Screen):
 		ConfigListScreen.__init__(self, self.list)
 		self["key_red"] = Button(_("Cancel"))
 		self["key_green"] = Button(_("Save"))
-		self["setupActions"] = ActionMap(["SetupActions", "ColorActions"],
-										 {"red": self.keyCancel,
-										  "green": self.save,
-										  "save": self.save,
-										  "cancel": self.keyCancel,
-										  "ok": self.save}, -2)
+		self["setupActions"] = ActionMap(
+			["SetupActions", "ColorActions"],
+			{
+				"red": self.keyCancel,
+				"green": self.save,
+				"save": self.save,
+				"cancel": self.keyCancel,
+				"ok": self.save
+			},
+			-2
+		)
 		self.onLayoutFinish.append(self.setCustomTitle)
 
 	def setCustomTitle(self):
@@ -861,20 +913,25 @@ class EPGImportLog(Screen):
 		self["key_yellow"] = Button()
 		self["key_blue"] = Button(_("Save"))
 		self["list"] = ScrollLabel(self.log.getvalue())
-		self["actions"] = ActionMap(["DirectionActions", "OkCancelActions", "ColorActions"],
-									{"red": self.clear,
-									 "green": self.cancel,
-									 "yellow": self.cancel,
-									 "save": self.save,
-									 "blue": self.save,
-									 "cancel": self.cancel,
-									 "ok": self.cancel,
-									 "left": self["list"].pageUp,
-									 "right": self["list"].pageDown,
-									 "up": self["list"].pageUp,
-									 "down": self["list"].pageDown,
-									 "pageUp": self["list"].pageUp,
-									 "pageDown": self["list"].pageDown}, -2)
+		self["actions"] = ActionMap(
+			["DirectionActions", "OkCancelActions", "ColorActions"],
+			{
+				"red": self.clear,
+				"green": self.cancel,
+				"yellow": self.cancel,
+				"save": self.save,
+				"blue": self.save,
+				"cancel": self.cancel,
+				"ok": self.cancel,
+				"left": self["list"].pageUp,
+				"right": self["list"].pageDown,
+				"up": self["list"].pageUp,
+				"down": self["list"].pageDown,
+				"pageUp": self["list"].pageUp,
+				"pageDown": self["list"].pageDown
+			},
+			-2
+		)
 
 	def save(self):
 		try:
@@ -1007,7 +1064,6 @@ def restartEnigma(confirmed):
 	_session.open(Screens.Standby.TryQuitMainloop, 3)
 
 
-##################################
 # Autostart section
 
 class AutoStartTimer:
@@ -1279,8 +1335,6 @@ def getNextWakeup():
 			print("[EPGImport] Will wake up from deep sleep", file=log)
 			return autoStartTimer.getStatus()
 	return -1
-
-# we need this helper function to identify the descriptor
 
 
 def run_from_epg_menu(menuid, **kwargs):
