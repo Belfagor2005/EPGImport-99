@@ -1,7 +1,7 @@
 #!/bin/bash
 ## setup command=wget -q "--no-check-certificate" https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer.sh -O - | /bin/bash
 
-## setup source command=wget -q "--no-check-certificate" https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer.sh -O - | /bin/bash
+## setup source command=wget -q "--no-check-certificate" https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer_source.sh -O - | /bin/bash
 
 
 ## Only This 2 lines to edit with new version ######
@@ -123,11 +123,12 @@ fi
 
 
 ## Check and update source from doglover3920
+# TMPSources=/var/volatile/tmp/EPGimport-Sources-main
 mkdir -p $TMPSources
 cd $TMPSources
 wget --no-check-certificate 'https://github.com/doglover3920/EPGimport-Sources/archive/refs/heads/main.tar.gz'
 tar -xzf main.tar.gz
-cp -r 'EPGimport-Sources-main/' '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/source/'
+cp -r $TMPSources/EPGimport-Sources-main/* '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/source/'
 set +e
 cd
 sleep 2

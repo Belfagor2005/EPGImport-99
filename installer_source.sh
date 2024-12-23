@@ -9,7 +9,7 @@ changelog='\n--Update Source xml EPGImport'
 
 ##############################################################
 
-TMPSources=/tmp/EPGimport-Sources-main
+TMPSources=/var/volatile/tmp/EPGimport-Sources-main
 
 if [ ! -d /usr/lib64 ]; then
 	PLUGINPATH=/usr/lib/enigma2/python/Plugins/Extensions/EPGImport
@@ -97,17 +97,17 @@ fi
 
 
 ## Check and update source from doglover3920
+# TMPSources=/var/volatile/tmp/EPGimport-Sources-main
 mkdir -p $TMPSources
 cd $TMPSources
 wget --no-check-certificate 'https://github.com/doglover3920/EPGimport-Sources/archive/refs/heads/main.tar.gz'
 tar -xzf main.tar.gz
-cp -r '/' '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/source/'
+cp -r $TMPSources/EPGimport-Sources-main/* '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/source/'
 set +e
 cd
 sleep 2
 
 
-rm -rf $TMPPATH > /dev/null 2>&1
 rm -rf $TMPSources > /dev/null 2>&1
 sync
 
