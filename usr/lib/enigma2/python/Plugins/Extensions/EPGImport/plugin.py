@@ -692,6 +692,7 @@ class EPGImportSources(Screen):
 		self["key_yellow"] = Button(_('Import'))
 		self["key_blue"] = Button(_('Import from Git'))
 		cfg = EPGConfig.loadUserSettings()
+		self.container = None
 		filter = cfg["sources"]
 		tree = []
 		cat = None
@@ -740,15 +741,24 @@ class EPGImportSources(Screen):
 
 	def install_update(self, answer=False):
 		if answer:
+			title = (_("Executing... \nPlease Wait..."))
 			installer_url = "https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer_source.sh"
 			cmd = "wget -q --no-check-certificate " + installer_url + " -O - | /bin/bash"
+			if self.container:
+				del self.container
+			self.container = eConsoleAppContainer()
+			self.container.appClosed.append(self.after_update)
+			if self.container.execute(cmd):
+				self.after_update(-1)
+
+			print("Update completed")
 			self.session.open(
-				Console,
-				_("Upgrading..."),
-				cmdlist=[cmd],
-				finishedCallback=self.myCallback,
-				closeOnSuccess=False
+				MessageBox,
+				_("Source files Imported!"),
+				MessageBox.TYPE_INFO,
+				timeout=5
 			)
+
 		else:
 			self.session.open(
 				MessageBox,
@@ -757,23 +767,16 @@ class EPGImportSources(Screen):
 				timeout=3
 			)
 
-	def myCallback(self, result=None):
-		print("result:", result)
-		self.session.open(
-			MessageBox,
-			_("Source files Imported!"),
-			MessageBox.TYPE_INFO,
-			timeout=5
-		)
+	def after_update(self, retval):
+		if self.container:
+			self.container.appClosed.remove(self.after_update)
+			self.container = None
 		self.cfg_imp()
 		self.save()
 
 	def cfg_imp(self):
 		self.source_cfg = resolveFilename(SCOPE_PLUGINS, "Extensions/EPGImport/epgimport.conf")
 		dest_cfg = '/etc/enigma2'  # Configurazione destinazione
-		if not os.path.exists(self.source_path):
-			print("Folder not exist:", self.source_path)
-			return
 		if not os.path.exists(CONFIG_PATH):
 			try:
 				os.makedirs(CONFIG_PATH)
@@ -786,7 +789,7 @@ class EPGImportSources(Screen):
 				print("File copied:", self.source_cfg, "->", dest_cfg)
 			except Exception as e:
 				print("Error while copying configuration file:", self.source_cfg, ":", str(e))
-				return
+		return
 
 	"""
 	def git_import(self):
