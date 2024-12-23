@@ -1,18 +1,15 @@
 #!/bin/bash
-## setup command=wget -q "--no-check-certificate" https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer.sh -O - | /bin/bash
 
 ## setup source command=wget -q "--no-check-certificate" https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer.sh -O - | /bin/bash
 
 
 ## Only This 2 lines to edit with new version ######
-version='99'
-changelog='\n--My Fake Version'
+version='1'
+changelog='\n--Update Source xml EPGImport'
 
 ##############################################################
 
-TMPPATH=/tmp/EPGImport-99-main
 TMPSources=/tmp/EPGimport-Sources-main
-FILEPATH=/tmp/main.tar.gz
 
 if [ ! -d /usr/lib64 ]; then
 	PLUGINPATH=/usr/lib/enigma2/python/Plugins/Extensions/EPGImport
@@ -79,19 +76,7 @@ else
 fi
 echo ""
 
-## Remove tmp directory
-[ -r $TMPPATH ] && rm -f $TMPPATH > /dev/null 2>&1
 
-## Remove tmp directory
-[ -r $FILEPATH ] && rm -f $FILEPATH > /dev/null 2>&1
-
-## Remove old plugin directory
-[ -r $PLUGINPATH ] && rm -rf $PLUGINPATH
-
-## Download and install plugin
-## check depends packges
-mkdir -p $TMPPATH
-cd $TMPPATH
 set -e
 if [ $OSTYPE = "DreamOs" ]; then
    echo "# Your image is OE2.5/2.6 #"
@@ -101,23 +86,12 @@ else
    echo ""
 fi
 
-# if [ $OSTYPE != "DreamOs" ]; then
-	# opkg update && opkg --force-reinstall --force-overwrite install ffmpeg gstplayer exteplayer3 enigma2-plugin-systemplugins-serviceapp
-# fi
-sleep 2
-
-wget --no-check-certificate 'https://github.com/Belfagor2005/EPGImport-99/archive/refs/heads/main.tar.gz'
-tar -xzf main.tar.gz
-cp -r 'EPGImport-99-main/usr' '/'
-set +e
-cd
 sleep 2
 
 
 ## Check if plugin installed correctly
 if [ ! -d $PLUGINPATH ]; then
 	echo "Some thing wrong .. Plugin not installed"
-	rm -rf $TMPPATH > /dev/null 2>&1
 	exit 1
 fi
 
@@ -148,8 +122,7 @@ echo "#########################################################
 #                developed by LULULLA                   #
 #               https://corvoboys.org                   #
 #########################################################
-#           your Device will RESTART Now                #
-#########################################################
+
 ^^^^^^^^^^Debug information:
 BOX MODEL: $box_type
 OO SYSTEM: $OSTYPE
@@ -158,5 +131,4 @@ IMAGE NAME: $distro_value
 IMAGE VERSION: $distro_version"
 
 sleep 5
-killall -9 enigma2
 exit 0
