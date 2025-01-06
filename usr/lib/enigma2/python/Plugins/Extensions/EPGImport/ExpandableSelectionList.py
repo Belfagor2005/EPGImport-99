@@ -6,9 +6,7 @@ from Components.MenuList import MenuList
 from enigma import RT_HALIGN_LEFT, eListboxPythonMultiContent, gFont, getDesktop
 from Tools.Directories import SCOPE_PLUGINS, resolveFilename
 from Tools.LoadPixmap import LoadPixmap
-# import os
-
-
+from PIL import Image
 
 
 FHD = False
@@ -38,6 +36,25 @@ lock_on = LoadPixmap(PathPlugin + "icon/lock_on.png")
 lock_off = LoadPixmap(PathPlugin + "icon/lock_off.png")
 
 
+def fix_png(file_path):
+    try:
+        with Image.open(file_path) as img:
+            img.save(file_path, "PNG")
+            print(f"Corretto il profilo colore per: {file_path}")
+    except Exception as e:
+        print(f"Errore durante la correzione di {file_path}: {e}")
+
+
+images = [
+    expandableIcon,
+    expandedIcon,
+    lock_on,
+    lock_off
+]
+
+for image_path in images:
+    fix_png(image_path)
+
 """
 # if isDreambox:
     # expandableIcon = LoadPixmap(resolveFilename(SCOPE_CURRENT_SKIN, "skin_default/expandable.png"))
@@ -61,7 +78,6 @@ def loadSettings():
     cat_desc_loc = (x, y, w, h)
     entry_desc_loc = (x + ind, y, w - ind, h)
 
-    # ok on dreambox
     if WQHD:
         x, y, w, h = (0, 18, 30, 33)  # y calcolato come (70 - 33) / 2
     elif FHD:
