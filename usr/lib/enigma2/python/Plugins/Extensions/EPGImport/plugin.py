@@ -786,7 +786,7 @@ class EPGImportSources(Screen):
 		if answer:
 			# title = (_("Executing... \nPlease Wait..."))
 			installer_url = "https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer_source.sh"
-			cmd = "wget -q --no-check-certificate " + installer_url + " -O - | /bin/bash -x > /tmp/install_debug.log 2>&1"
+			cmd = "rm -rf /etc/epgimport/*;wget -q --no-check-certificate " + installer_url + " -O - | /bin/bash -x > /tmp/install_debug.log 2>&1"
 			if self.container:
 				del self.container
 			self.container = eConsoleAppContainer()
