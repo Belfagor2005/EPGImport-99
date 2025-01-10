@@ -285,13 +285,18 @@ epgimport = EPGImport.EPGImport(eEPGCache.getInstance(), channelFilter)
 lastImportResult = None
 
 
+if config.plugins.epgimport.filter_custom_channel.value:
+	filterCustomChannel = True
+else:
+	filterCustomChannel = False
+
 def startImport():
 	if not epgimport.isImportRunning():
 		EPGImport.HDD_EPG_DAT = config.misc.epgcache_filename.value
-		if config.plugins.epgimport.filter_custom_channel.value:
-			EPGConfig.filterCustomChannel = True
-		else:
-			EPGConfig.filterCustomChannel = False
+		# if config.plugins.epgimport.filter_custom_channel.value:
+			# EPGConfig.filterCustomChannel = True
+		# else:
+			# EPGConfig.filterCustomChannel = False
 		if config.plugins.epgimport.clear_oldepg.value and hasattr(epgimport.epgcache, 'flushEPG'):
 			EPGImport.unlink_if_exists(EPGImport.HDD_EPG_DAT)
 			EPGImport.unlink_if_exists(EPGImport.HDD_EPG_DAT + '.backup')

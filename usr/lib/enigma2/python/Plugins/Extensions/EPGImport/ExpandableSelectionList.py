@@ -16,18 +16,17 @@ if getDesktop(0).size().width() == 1920:
 if getDesktop(0).size().width() == 2560:
     WQHD = True
 
-
-# gPixmap: Failed to access '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/icons/expandable.png': No such file or directory
-# gPixmap: Failed to access '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/icons/expanded.png': No such file or directory
-# gPixmap: Failed to access '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/skin_default/icons/lock_on.png': No such file or directory
-# gPixmap: Failed to access '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/skin_default/icons/lock_off.png': No such file or directory
-
-# PathPLugin = resolveFilename(SCOPE_PLUGINS, "Extensions/{}".format('EPGImport'))
-# expandableIcon = LoadPixmap(PathPLugin, "icons/expandable.png"))
-# expandedIcon = LoadPixmap(resolveFilename(PathPLugin, "icons/expanded.png"))
-# lock_on = LoadPixmap(resolveFilename(PathPLugin, "skin_default/icons/lock_on.png"))
-# lock_off = LoadPixmap(resolveFilename(PathPLugin, "skin_default/icons/lock_off.png"))
-
+"""
+gPixmap: Failed to access '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/icons/expandable.png': No such file or directory
+gPixmap: Failed to access '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/icons/expanded.png': No such file or directory
+gPixmap: Failed to access '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/skin_default/icons/lock_on.png': No such file or directory
+gPixmap: Failed to access '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/skin_default/icons/lock_off.png': No such file or directory
+PathPLugin = resolveFilename(SCOPE_PLUGINS, "Extensions/{}".format('EPGImport'))
+expandableIcon = LoadPixmap(PathPLugin, "icons/expandable.png"))
+expandedIcon = LoadPixmap(resolveFilename(PathPLugin, "icons/expanded.png"))
+lock_on = LoadPixmap(resolveFilename(PathPLugin, "skin_default/icons/lock_on.png"))
+lock_off = LoadPixmap(resolveFilename(PathPLugin, "skin_default/icons/lock_off.png"))
+"""
 
 PathPlugin = resolveFilename(SCOPE_PLUGINS, "Extensions/EPGImport/")
 expandableIcon = LoadPixmap(PathPlugin + "icon/expandable.png")
@@ -56,12 +55,12 @@ for image_path in images:
     fix_png(image_path)
 
 """
-# if isDreambox:
-    # expandableIcon = LoadPixmap(resolveFilename(SCOPE_CURRENT_SKIN, "skin_default/expandable.png"))
-    # expandedIcon = LoadPixmap(resolveFilename(SCOPE_CURRENT_SKIN, "skin_default/expanded.png"))
-# else:
-    # expandableIcon = LoadPixmap(resolveFilename(SCOPE_CURRENT_SKIN, "icons/expandable.png"))
-    # expandedIcon = LoadPixmap(resolveFilename(SCOPE_CURRENT_SKIN, "icons/expanded.png"))
+if isDreambox:
+    expandableIcon = LoadPixmap(resolveFilename(SCOPE_CURRENT_SKIN, "skin_default/expandable.png"))
+    expandedIcon = LoadPixmap(resolveFilename(SCOPE_CURRENT_SKIN, "skin_default/expanded.png"))
+else:
+    expandableIcon = LoadPixmap(resolveFilename(SCOPE_CURRENT_SKIN, "icons/expandable.png"))
+    expandedIcon = LoadPixmap(resolveFilename(SCOPE_CURRENT_SKIN, "icons/expanded.png"))
 """
 
 

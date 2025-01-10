@@ -1,4 +1,5 @@
-from __future__ import absolute_import, print_function
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 from xml.etree.cElementTree import iterparse
 import gzip
 import os
@@ -6,7 +7,7 @@ import random
 import re
 import time
 
-from . import log, EPGConfig
+from . import log
 try:  # python2
 	import cPickle as pickle
 except:  # python3
@@ -102,7 +103,7 @@ class EPGChannel:
 	def openStream(self, filename):
 		fd = open(filename, 'rb')
 		if not os.fstat(fd.fileno()).st_size:
-			raise Exception("File is empty")
+			print("File is empty")
 		if filename.endswith('.gz'):
 			fd = gzip.GzipFile(fileobj=fd, mode='rb')
 		elif filename.endswith('.xz') or filename.endswith('.lzma'):
@@ -167,7 +168,7 @@ class EPGChannel:
 		# and we don't have multiple download from server problem since it is always a local file.
 		if os.path.exists(customFile):
 			print("[EPGImport] Parsing channels from '%s'" % customFile, file=log)
-			self.parse(filterCallback, customFile, EPGConfig.filterCustomChannel)
+			self.parse(filterCallback, customFile, filterCustomChannel)  # EPGConfig.filterCustomChannel)
 		if downloadedFile is not None:
 			self.mtime = time.time()
 			return self.parse(filterCallback, downloadedFile, True)
