@@ -1,16 +1,19 @@
-from __future__ import absolute_import, print_function
-from . import _
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+from . import _, isDreambox
 from . import log
 from . import ExpandableSelectionList
 from . import EPGImport
 from . import EPGConfig
 from . import filtersServices
+
 from Components.ActionMap import ActionMap
 from Components.Button import Button
 from Components.ConfigList import ConfigListScreen
 from Components.Console import Console
 from Components.Label import Label
-from Components.ScrollLabel import ScrollLabel
+# from Components.ScrollLabel import ScrollLabel
 from Components.config import config, ConfigEnableDisable, ConfigSubsection, \
 	ConfigYesNo, ConfigClock, getConfigListEntry, ConfigText, ConfigInteger, ConfigDirectory, \
 	ConfigSelection, ConfigNumber, ConfigSubDict, NoSave, configfile
@@ -23,13 +26,22 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools import Notifications
 from Tools.Directories import SCOPE_PLUGINS, fileExists, resolveFilename
 from Tools.FuzzyDate import FuzzyTime
-from Tools.StbHardware import getFPWasTimerWakeup
-from enigma import eServiceCenter, eServiceReference, eEPGCache, getDesktop, eTimer, eConsoleAppContainer
+from enigma import eConsoleAppContainer
+from enigma import eEPGCache, getDesktop, eTimer, eServiceCenter, eServiceReference
+from sqlite3 import dbapi2 as sqlite
 import Components.PluginComponent
 import NavigationInstance
 import Screens.Standby
 import os
 import time
+import shutil
+
+global filterCustomChannel
+
+try:
+	from Tools.StbHardware import getFPWasTimerWakeup
+except:
+	from Tools.DreamboxHardware import getFPWasTimerWakeup
 
 
 def lastMACbyte():
@@ -228,11 +240,17 @@ def channelFilter(ref):
 	if not ref:
 		return False
 	loadepg_only = config.plugins.epgimport.loadepg_only.value
+	"""
+	if loadepg_only and ("%3a//" not in ref.lower() or ref.startswith("1")):
+		return False
+	"""
 	if loadepg_only != "default":
 		if loadepg_only == "all":
 			return True
 		elif loadepg_only == "iptv":
-			return ("%3a//" not in ref.lower() or ref.startswith("1")) and False or True
+			return False
+			# return ("%3a//" not in ref.lower() or ref.startswith("1")) and False or True
+
 	sref = eServiceReference(ref)
 	refnum = getRefNum(sref.toString())
 	if config.plugins.epgimport.import_onlybouquet.value:
@@ -240,16 +258,16 @@ def channelFilter(ref):
 		if BouquetChannelListList is None:
 			BouquetChannelListList = getBouquetChannelList()
 		if refnum not in BouquetChannelListList:
-			print("Serviceref not in bouquets:", sref.toString(), file=log)
+			print("Serviceref not in bouquets:", sref.toString())
 			return False
 	global serviceIgnoreList
 	if serviceIgnoreList is None:
 		serviceIgnoreList = [getRefNum(x) for x in filtersServices.filtersServicesList.servicesList()]
 	if refnum in serviceIgnoreList:
-		print("Serviceref is in ignore list:", sref.toString(), file=log)
+		print("Serviceref is in ignore list:", sref.toString())
 		return False
 	if "%3a//" in ref.lower():
-		# print("URL detected in serviceref, not checking fake recording on serviceref:", ref, file=log)
+		# print("URL detected in serviceref, not checking fake recording on serviceref:", ref)
 		return True
 	fakeRecService = NavigationInstance.instance.recordService(sref, True)
 	if fakeRecService:
@@ -258,7 +276,7 @@ def channelFilter(ref):
 		# -7 (errNoSourceFound) occurs when tuner is disconnected.
 		r = fakeRecResult in (0, -7)
 		return r
-	print("Invalid serviceref string:", ref, file=log)
+	print("Invalid serviceref string:", ref)
 	return False
 
 
@@ -281,68 +299,61 @@ def startImport():
 		epgimport.onDone = doneImport
 		epgimport.beginImport(longDescUntil=config.plugins.epgimport.longDescDays.value * 24 * 3600 + time.time())
 	else:
-		print("[startImport] Already running, won't start again", file=log)
+		print("[startImport] Already running, won't start again")
 
 
 ##################################
 # Configuration GUI
-HD = False
-try:
-	if getDesktop(0).size().width() >= 1280:
-		HD = True
-except:
-	pass
+sz_w = getDesktop(0).size().width()
 
 
 class EPGImportConfig(ConfigListScreen, Screen):
-	if HD:
+	if sz_w >= 1920:
 		skin = """
-			<screen position="center,center" size="600,605" title="EPG Import Configuration" >
-				<ePixmap name="red" position="0,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/red.png" transparent="1" alphatest="on" />
-				<ePixmap name="green" position="140,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/green.png" transparent="1" alphatest="on" />
-				<ePixmap name="yellow" position="280,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/yellow.png" transparent="1" alphatest="on" />
-				<ePixmap name="blue" position="420,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/blue.png" transparent="1" alphatest="on" />
-				<ePixmap position="562,0" size="35,25" pixmap="skin_default/buttons/key_info.png" alphatest="on" />
-				<ePixmap position="562,30" size="35,25" pixmap="skin_default/buttons/key_menu.png" alphatest="on" />
-				<widget name="key_red" position="0,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;19" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-				<widget name="key_green" position="140,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;19" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-				<widget name="key_yellow" position="280,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;19" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-				<widget name="key_blue" position="420,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;19" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-				<widget name="config" position="10,70" size="590,355" scrollbarMode="showOnDemand" />
-				<ePixmap alphatest="on" pixmap="icons/clock.png" position="520,583" size="14,14" zPosition="3"/>
-				<widget font="Regular;18" halign="left" position="545,580" render="Label" size="55,20" source="global.CurrentTime" transparent="1" valign="center" zPosition="3">
-					<convert type="ClockToText">Default</convert>
-				</widget>
-				<widget name="description" position="10,430" size="590,100" font="Regular;17" valign="top"/>
-				<widget name="statusbar" position="10,535" size="590,20" font="Regular;18" />
-				<widget name="status" position="10,560" size="590,40" font="Regular;19" />
+			<screen position="center,center" size="1200,820" title="EPG Import Configuration">
+				<ePixmap pixmap="skin_default/buttons/red.png" position="10,5" size="295,70" />
+				<ePixmap pixmap="skin_default/buttons/green.png" position="305,5" size="295,70" />
+				<ePixmap pixmap="skin_default/buttons/yellow.png" position="600,5" size="295,70" />
+				<ePixmap pixmap="skin_default/buttons/blue.png" position="895,5" size="295,70" />
+				<widget backgroundColor="#9f1313" font="Regular;30" halign="center" name="key_red" position="10,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="295,70" transparent="1" valign="center" zPosition="1" />
+				<widget backgroundColor="#1f771f" font="Regular;30" halign="center" name="key_green" position="305,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="295,70" transparent="1" valign="center" zPosition="1" />
+				<widget backgroundColor="#a08500" font="Regular;30" halign="center" name="key_yellow" position="600,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="295,70" transparent="1" valign="center" zPosition="1" />
+				<widget backgroundColor="#18188b" font="Regular;30" halign="center" name="key_blue" position="895,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="295,70" transparent="1" valign="center" zPosition="1" />
+				<eLabel backgroundColor="grey" position="10,80" size="1180,1" />
+				<widget enableWrapAround="1" name="config" position="10,90" scrollbarMode="showOnDemand" size="1180,538" />
+				<eLabel backgroundColor="grey" position="10,710" size="1180,1" />
+				<widget font="Regular;32" halign="center" name="status" position="13,717" size="1175,47" valign="center" />
+				<widget font="Regular;32" halign="center" name="statusbar" position="101,770" size="986,44" valign="center" />
+				<widget font="Regular;32" halign="center" name="description" position="13,653" size="1175,51" valign="center" />
+				<ePixmap pixmap="skin_default/icons/info.png" position="10,770" size="80,40" />
+				<ePixmap pixmap="skin_default/icons/menu.png" position="1110,770" size="80,40" />
 			</screen>"""
 	else:
 		skin = """
-			<screen position="center,center" size="600,430" title="EPG Import Configuration" >
-				<ePixmap name="red" position="0,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/red.png" transparent="1" alphatest="on" />
-				<ePixmap name="green" position="140,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/green.png" transparent="1" alphatest="on" />
-				<ePixmap name="yellow" position="280,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/yellow.png" transparent="1" alphatest="on" />
-				<ePixmap name="blue" position="420,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/blue.png" transparent="1" alphatest="on" />
-				<ePixmap position="562,0" size="35,25" pixmap="skin_default/buttons/key_info.png" alphatest="on" />
-				<ePixmap position="562,30" size="35,25" pixmap="skin_default/buttons/key_menu.png" alphatest="on" />
-				<widget name="key_red" position="0,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;20" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-				<widget name="key_green" position="140,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;20" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-				<widget name="key_yellow" position="280,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;20" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-				<widget name="key_blue" position="420,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;20" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-				<widget name="config" position="10,60" size="590,250" scrollbarMode="showOnDemand" />
-				<ePixmap alphatest="on" pixmap="icons/clock.png" position="520,403" size="14,14" zPosition="3"/>
-				<widget font="Regular;18" halign="left" position="545,400" render="Label" size="55,20" source="global.CurrentTime" transparent="1" valign="center" zPosition="3">
-					<convert type="ClockToText">Default</convert>
-				</widget>
-				<widget name="description" position="10,315" size="590,75" itemHeight="18" font="Regular;18" valign="top"/>
-				<widget name="statusbar" position="10,410" size="500,20" font="Regular;18" />
-				<widget name="status" position="10,330" size="580,60" font="Regular;20" />
+			<screen position="center,center" size="820,520" title="EPG Import Configuration">
+				<ePixmap pixmap="skin_default/buttons/red.png" position="10,5" size="200,40" />
+				<ePixmap pixmap="skin_default/buttons/green.png" position="210,5" size="200,40" />
+				<ePixmap pixmap="skin_default/buttons/yellow.png" position="410,5" size="200,40" />
+				<ePixmap pixmap="skin_default/buttons/blue.png" position="610,5" size="200,40" />
+				<widget name="key_red" position="10,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" foregroundColor="white" backgroundColor="#9f1313" transparent="1" shadowColor="black" shadowOffset="-2,-2" />
+				<widget name="key_green" position="210,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" foregroundColor="white" backgroundColor="#1f771f" transparent="1" shadowColor="black" shadowOffset="-2,-2" />
+				<widget name="key_yellow" position="410,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" foregroundColor="white" backgroundColor="#a08500" transparent="1" shadowColor="black" shadowOffset="-2,-2" />
+				<widget name="key_blue" position="610,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" foregroundColor="white" backgroundColor="#18188b" transparent="1" shadowColor="black" shadowOffset="-2,-2" />
+				<eLabel position="10,50" size="800,1" backgroundColor="grey" />
+				<widget name="config" position="10,60" size="800,360" enableWrapAround="1" scrollbarMode="showOnDemand" />
+				<eLabel position="10,425" size="800,1" backgroundColor="grey" />
+				<widget name="status" position="87,486" size="660,32" font="Regular;22" halign="center" valign="center" />
+				<widget name="statusbar" position="13,452" size="798,33" font="Regular;22" halign="center" valign="center" />
+				<widget name="description" position="12,425" size="795,30" font="Regular;22" halign="center" valign="center" />
+				<ePixmap pixmap="skin_default/buttons/key_info.png" position="10,488" size="50,25" />
+				<ePixmap pixmap="skin_default/buttons/key_menu.png" position="760,488" size="50,25" />
 			</screen>"""
 
-	def __init__(self, session):
+	def __init__(self, session, args=0):
+		self.session = session
+		self.skin = EPGImportConfig.skin
 		Screen.__init__(self, session)
-		self.setTitle(_("EPG Import Configuration"))
+		# self.setTitle(_("EPG Import Configuration"))
 		self["status"] = Label()
 		self["statusbar"] = Label()
 		self["key_red"] = Button(_("Cancel"))
@@ -355,11 +366,11 @@ class EPGImportConfig(ConfigListScreen, Screen):
 			{
 				"red": self.keyRed,
 				"green": self.keyGreen,
-				"yellow": self.doimport,		   # Tasto giallo - Importazione
-				"blue": self.dosources,			   # Tasto blu - Fonti
-				"cancel": self.extnok,
+				"yellow": self.doimport,           # Tasto giallo - Importazione
+				"blue": self.dosources,            # Tasto blu - Fonti
+				"cancel": self.keyRed,
 				"ok": self.keyOk,
-				"log": self.keyInfo,			   # Tasto log - Info aggiuntive
+				"log": self.keyInfo,               # Tasto log - Info aggiuntive
 				"contextMenu": self.openMenu
 			},
 			-1
@@ -377,7 +388,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self.updateTimer.callback.append(self.updateStatus)
 		self.updateTimer.start(2000)
 		self.updateStatus()
-		self.onLayoutFinish.append(self.createSummary)
+		self.onLayoutFinish.append(self.__layoutFinished)
 
 	def changedEntry(self):
 		for x in self.onChangedEntry:
@@ -394,11 +405,21 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		return SetupSummary
 
 	def __layoutFinished(self):
-		self.setTitle(self.setup_title)
+		pass
 
 	def initConfig(self):
 		dx = 4 * " "
+
+		def getPrevValues(section):
+			res = {}
+			for (key, val) in section.content.items.items():
+				if isinstance(val, ConfigSubsection):
+					res[key] = getPrevValues(val)
+				else:
+					res[key] = val.value
+			return res
 		self.EPG = config.plugins.epgimport
+		self.prev_values = getPrevValues(self.EPG)
 		self.cfg_enabled = getConfigListEntry(_("Automatic import EPG"), self.EPG.enabled, _("When enabled, it allows you to schedule an automatic EPG update at the given days and time."))
 		self.cfg_pathdb = getConfigListEntry(_("Path DB EPG"), self.EPG.pathdb)
 		self.cfg_wakeup = getConfigListEntry(dx + _("Automatic start time"), self.EPG.wakeup, _("Specify the time for the automatic EPG update."))
@@ -439,6 +460,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self.list.append(self.cfg_runboot)
 		if self.EPG.runboot.value != "4":
 			self.list.append(self.cfg_runboot_day)
+
 			self.list.append(self.cfg_runboot_restart)
 		self.list.append(self.cfg_run_after_standby)
 		self.list.append(self.cfg_loadepg_only)
@@ -456,7 +478,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 				from Plugins.Extensions.AutoTimer.AutoTimer import AutoTimer
 				self.list.append(self.cfg_parse_autotimer)
 			except ImportError:
-				print("[EPGImport] AutoTimer plugin not installed correctly", file=log)
+				print("[EPGImport] AutoTimer plugin not installed correctly")
 		self.list.append(self.cfg_showinmainmenu)
 		self.list.append(self.cfg_showinextensions)
 		self["config"].list = self.list
@@ -480,13 +502,15 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self.keyGreen()
 
 	def extnok(self, answer=None):
-		if answer is None:
-			self.session.openWithCallback(self.extnok, MessageBox, _("Really close without saving settings?"))
-		elif answer:
-			for x in self["config"].list:
-				x[1].cancel()
-			self.close(True)
-		return
+		if self["config"].isChanged():
+			if answer is None:
+				self.session.openWithCallback(self.extnok, MessageBox, _("Really close without saving settings?"))
+			elif answer:
+				for x in self["config"].list:
+					x[1].cancel()
+				self.save()
+		else:
+			self.save()
 
 	def keyGreen(self):
 		self.updateTimer.stop()
@@ -547,7 +571,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 					windowTitle=_("Choose Directory:"),
 					text=_("Choose directory"),
 					currDir=str(path),
-					bookmarks=config.movielist.videodirs,  # bookmarks,
+					bookmarks=config.movielist.videodirs,
 					autoAdd=True,
 					editDir=True,
 					inhibitDirs=["/bin", "/boot", "/dev", "/home", "/lib", "/proc", "/run", "/sbin", "/sys", "/usr", "/var"]
@@ -578,7 +602,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 			src = epgimport.source
 			text = self.importStatusTemplate % (src.description, epgimport.eventCount)
 		self["status"].setText(text)
-
 		if lastImportResult and (lastImportResult != self.lastImportResult):
 			start, count = lastImportResult
 			try:
@@ -593,19 +616,20 @@ class EPGImportConfig(ConfigListScreen, Screen):
 				print("[EPGImport] Errore con FuzzyTime:", e)
 				try:
 					d, t = FuzzyTime(int(start))
+					print("[EPGImport] Metodo FuzzyTime(int(start)")
 				except Exception as e:
 					print("[EPGImport] Fallito anche il fallback con FuzzyTime:", e)
 					d, t = _("unknown"), _("unknown")
-
 			self["statusbar"].setText(_("Last: %s %s, %d events") % (d, t, count))
 			self.lastImportResult = lastImportResult
 
 	def keyInfo(self):
-		self.session.open(MessageBox, _("Last import: %s events") % config.plugins.extra_epgimport.last_import.value, type=MessageBox.TYPE_INFO)
+		last_import = config.plugins.extra_epgimport.last_import.value
+		self.session.open(MessageBox, _("Last import: %s events") % last_import, type=MessageBox.TYPE_INFO)
 
 	def doimport(self, one_source=None):
 		if epgimport.isImportRunning():
-			print("[EPGImport] Already running, won't start again", file=log)
+			print("[EPGImport] Already running, won't start again")
 			self.session.open(MessageBox, _("EPGImport\nImport of epg data is still in progress. Please wait."), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
 			return
 		if self.prev_onlybouquet != config.plugins.epgimport.import_onlybouquet.value or (autoStartTimer is not None and autoStartTimer.prev_multibouquet != config.usage.multibouquet.value):
@@ -632,7 +656,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 			else:
 				startImport()
 		except Exception as e:
-			print("[EPGImport] Error at start:", e, file=log)
+			print("[EPGImport] Error at start:", e)
 			self.session.open(MessageBox, _("EPGImport Plugin\nFailed to start:\n") + str(e), MessageBox.TYPE_ERROR, timeout=15, close_on_any_key=True)
 		self.updateStatus()
 
@@ -643,7 +667,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self.session.openWithCallback(self.sourcesDone, EPGImportSources)
 
 	def sourcesDone(self, confirmed, sources, cfg):
-		print("sourcesDone(): ", confirmed, sources, file=log)
+		print("sourcesDone(): ", confirmed, sources)
 		if cfg is not None:
 			self.doimport(one_source=cfg)
 
@@ -662,31 +686,44 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self.session.open(filtersServices.filtersServicesSetup)
 
 	def showLog(self):
-		self.session.open(EPGImportLog)
+		self.session.open(EPGImportLogx)
 
 
 class EPGImportSources(Screen):
 	"Pick sources from config"
-	skin = """
-		<screen name="EPGImportSources" position="center,center" size="560,400" title="EPG Import Sources" >
-			<ePixmap name="red" position="0,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/red.png" transparent="1" alphatest="on" />
-			<ePixmap name="green" position="140,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/green.png" transparent="1" alphatest="on" />
-			<ePixmap name="yellow" position="280,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/yellow.png" transparent="1" alphatest="on" />
-			<ePixmap name="blue" position="420,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/blue.png" transparent="1" alphatest="on" />
-			<widget name="key_red" position="0,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;17" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-			<widget name="key_green" position="140,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;17" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-			<widget name="key_yellow" position="280,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;17" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-			<widget name="key_blue" position="420,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;17" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-			<ePixmap alphatest="on" pixmap="skin_default/icons/clock.png" position="480,383" size="14,14" zPosition="3"/>
-			<widget font="Regular;18" halign="left" position="505,380" render="Label" size="55,20" source="global.CurrentTime" transparent="1" valign="center" zPosition="3">
-				<convert type="ClockToText">Default</convert>
-			</widget>
-			<widget name="list" position="10,40" size="540,336" scrollbarMode="showOnDemand" />
-		</screen>"""
+	if sz_w >= 1920:
+		skin = """
+			<screen position="center,center" size="1200,820" title="EPG Import Sources" >
+				<ePixmap pixmap="skin_default/buttons/red.png" position="10,5" size="295,70" />
+				<ePixmap pixmap="skin_default/buttons/green.png" position="305,5" size="295,70" />
+				<ePixmap pixmap="skin_default/buttons/yellow.png" position="600,5" size="295,70" />
+				<ePixmap pixmap="skin_default/buttons/blue.png" position="895,5" size="295,70" />
+				<widget backgroundColor="#9f1313" font="Regular;30" halign="center" name="key_red" position="10,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="295,70" transparent="1" valign="center" zPosition="1" />
+				<widget backgroundColor="#1f771f" font="Regular;30" halign="center" name="key_green" position="305,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="295,70" transparent="1" valign="center" zPosition="1" />
+				<widget backgroundColor="#a08500" font="Regular;30" halign="center" name="key_yellow" position="600,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="295,70" transparent="1" valign="center" zPosition="1" />
+				<widget backgroundColor="#18188b" font="Regular;30" halign="center" name="key_blue" position="895,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="295,70" transparent="1" valign="center" zPosition="1" />
+				<eLabel backgroundColor="grey" position="10,80" size="1180,1" />
+				<widget enableWrapAround="1" name="list" position="10,90" size="1180,700" scrollbarMode="showOnDemand" />
+			</screen>"""
+	else:
+		skin = """
+			<screen position="center,center" size="820,520" title="EPG Import Sources" >
+				<ePixmap pixmap="skin_default/buttons/red.png" position="10,5" size="200,40" />
+				<ePixmap pixmap="skin_default/buttons/green.png" position="210,5" size="200,40" />
+				<ePixmap pixmap="skin_default/buttons/yellow.png" position="410,5" size="200,40" />
+				<ePixmap pixmap="skin_default/buttons/blue.png" position="610,5" size="200,40" />
+				<widget name="key_red" position="10,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" foregroundColor="white" backgroundColor="#9f1313" transparent="1" shadowColor="black" shadowOffset="-2,-2" />
+				<widget name="key_green" position="210,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" foregroundColor="white" backgroundColor="#1f771f" transparent="1" shadowColor="black" shadowOffset="-2,-2" />
+				<widget name="key_yellow" position="410,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" foregroundColor="white" backgroundColor="#a08500" transparent="1" shadowColor="black" shadowOffset="-2,-2" />
+				<widget name="key_blue" position="610,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" foregroundColor="white" backgroundColor="#18188b" transparent="1" shadowColor="black" shadowOffset="-2,-2" />
+				<eLabel position="10,50" size="800,1" backgroundColor="grey" />
+				<widget name="list" position="10,60" size="800,450" enableWrapAround="1" scrollbarMode="showOnDemand" />
+			</screen>"""
 
 	def __init__(self, session):
+		self.session = session
 		Screen.__init__(self, session)
-		self.setTitle(_("EPG Import Sources"))
+		# self.setTitle(_("EPG Import Sources"))
 		self["key_red"] = Button(_("Cancel"))
 		self["key_green"] = Button(_("Save"))
 		self["key_yellow"] = Button(_('Import'))
@@ -718,15 +755,16 @@ class EPGImportSources(Screen):
 			self["key_yellow"].hide()
 			self["key_blue"].show()
 		self["setupActions"] = ActionMap(
-			["SetupActions", "ColorActions"],
+			["SetupActions", "ColorActions", "MenuActions"],
 			{
 				"red": self.cancel,
 				"green": self.save,
-				"yellow": self.do_import,		 # Tasto giallo - Importazione
-				"blue": self.git_import,		 # Tasto blu - Importazione tramite Git
+				"yellow": self.do_import,        # Tasto giallo - Importazione
+				"blue": self.git_import,         # Tasto blu - Importazione tramite Git
 				"save": self.save,
 				"cancel": self.cancel,
-				"ok": self["list"].toggleSelection	# Tasto OK - Toggle selezione nella lista
+				"menu": self.do_reset,
+				"ok": self["list"].toggleSelection  # Tasto OK - Toggle selezione nella lista
 			},
 			-2
 		)
@@ -741,14 +779,24 @@ class EPGImportSources(Screen):
 
 	def install_update(self, answer=False):
 		if answer:
-			title = (_("Executing... \nPlease Wait..."))
+			# title = (_("Executing... \nPlease Wait..."))
 			installer_url = "https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer_source.sh"
-			cmd = "wget -q --no-check-certificate " + installer_url + " -O - | /bin/bash"
+			cmd = "wget -q --no-check-certificate " + installer_url + " -O - | /bin/bash -x > /tmp/install_debug.log 2>&1"
 			if self.container:
 				del self.container
 			self.container = eConsoleAppContainer()
+			self.run = 0
+			self.finished = False
+
 			self.container.appClosed.append(self.after_update)
 			if self.container.execute(cmd):
+				print("Command executed successfully")
+			else:
+				print("Command execution failed")
+
+			retval = self.container.execute(cmd)
+			print("Command execution result:", retval)
+			if retval == 0:
 				self.after_update(-1)
 
 			print("Update completed")
@@ -767,12 +815,61 @@ class EPGImportSources(Screen):
 				timeout=3
 			)
 
+	def refresh_tree(self):
+		print("Refreshing tree...")
+		cfg = EPGConfig.loadUserSettings()
+		filter = cfg["sources"]
+		tree = []
+		cat = None
+		for x in EPGConfig.enumSources(CONFIG_PATH, filter=None, categories=True):
+			print("Source detected:", x)
+			if hasattr(x, 'description'):
+				sel = (filter is None) or (x.description in filter)
+				entry = (x.description, x.description, sel)
+				if cat is None:
+					cat = ExpandableSelectionList.category("[.]")
+					tree.append(cat)
+				cat[0][2].append(entry)
+				if sel:
+					ExpandableSelectionList.expand(cat, True)
+			else:
+				cat = ExpandableSelectionList.category(x)
+				tree.append(cat)
+		self["list"].setList(tree)
+		print("Tree updated:", tree)
+		if tree:
+			self["key_yellow"].show()
+			self["key_blue"].hide()
+		else:
+			self["key_yellow"].hide()
+			self["key_blue"].show()
+
 	def after_update(self, retval):
+		print("after_update called with retval:", retval)
+		if retval == 0:
+			print("Update completed successfully.")
+		elif retval == -1:
+			print("Import failed with return code: -1")
+		else:
+			print("Unexpected return value:", retval)
+
 		if self.container:
-			self.container.appClosed.remove(self.after_update)
-			self.container = None
+			try:
+				self.container.appClosed.remove(self.after_update)
+			except:
+				self.container.appClosed_conn = None
+			self.container.kill()
+
+		self.refresh_tree()
+
 		self.cfg_imp()
-		self.save()
+
+		self.session.open(
+			MessageBox,
+			_("Source files Imported and List Updated!"),
+			MessageBox.TYPE_INFO,
+			timeout=5
+		)
 
 	def cfg_imp(self):
 		self.source_cfg = resolveFilename(SCOPE_PLUGINS, "Extensions/EPGImport/epgimport.conf")
@@ -789,46 +886,11 @@ class EPGImportSources(Screen):
 				print("File copied:", self.source_cfg, "->", dest_cfg)
 			except Exception as e:
 				print("Error while copying configuration file:", self.source_cfg, ":", str(e))
-		return
-
-	"""
-	def git_import(self):
-		self.source_path = resolveFilename(SCOPE_PLUGINS, "Extensions/EPGImport/source")
-		self.source_cfg = resolveFilename(SCOPE_PLUGINS, "Extensions/EPGImport/epgimport.conf")
-		dest_cfg = '/etc/enigma2'  # Configurazione destinazione
-		if not os.path.exists(self.source_path):
-			print("Folder not exist:", self.source_path)
-			return
-		if not os.path.exists(CONFIG_PATH):
-			try:
-				os.makedirs(CONFIG_PATH)
-			except Exception as e:
-				print("Error creating directory:", CONFIG_PATH, ":", str(e))
-				return
-		if not os.path.exists(os.path.join(dest_cfg, 'epgimport.conf')):
-			try:
-				shutil.copy(self.source_cfg, dest_cfg)
-				print("File copied:", self.source_cfg, "->", dest_cfg)
-			except Exception as e:
-				print("Error while copying configuration file:", self.source_cfg, ":", str(e))
-				return
-		for filename in os.listdir(self.source_path):
-			source_file = os.path.join(self.source_path, filename)
-			dest_file = os.path.join(CONFIG_PATH, filename)
-			if os.path.isfile(source_file):
-				try:
-					shutil.copy(source_file, dest_file)
-					print("File copied:", source_file, "->", dest_file)
-				except Exception as e:
-					print("Error while copying file:", source_file, ":", str(e))
-		self.session.open(MessageBox, _("Source files Imported!"), MessageBox.TYPE_INFO, timeout=5)
-		self.save()
-	"""
 
 	def save(self):
 		# Make the entries unique through a set
 		sources = list(set([item[1] for item in self["list"].enumSelected()]))
-		print("[EPGImport] Selected sources:", sources, file=log)
+		print("[EPGImport] Selected sources:", sources)
 		EPGConfig.storeUserSettings(sources=sources)
 		self.close(True, sources, None)
 
@@ -843,27 +905,86 @@ class EPGImportSources(Screen):
 				item = self["list"].list[idx][0]
 				source = [item[1] or ""]
 				cfg = {"sources": source}
-				print("[EPGImport] Selected source: ", source, file=log)
+				print("[EPGImport] Selected source: ", source)
 			except Exception as e:
-				print("[EPGImport] Error at selected source:", e, file=log)
+				print("[EPGImport] Error at selected source:", e)
 			else:
 				if cfg["sources"] != "":
 					self.close(False, None, cfg)
 
+	def do_reset(self):
+		log.write("[EPGImport] create empty epg.db")
+		self.epginstance = eEPGCache.getInstance()
+		if os.path.exists(config.misc.epgcache_filename.value):
+			os.remove(config.misc.epgcache_filename.value)
+		connection = sqlite.connect(config.misc.epgcache_filename.value, timeout=10)
+		connection.text_factory = str
+		cursor = connection.cursor()
+		cursor.execute("CREATE TABLE T_Service (id INTEGER PRIMARY KEY, sid INTEGER NOT NULL, tsid INTEGER, onid INTEGER, dvbnamespace INTEGER, changed DATETIME NOT NULL DEFAULT current_timestamp)")
+		cursor.execute("CREATE TABLE T_Source (id INTEGER PRIMARY KEY, source_name TEXT NOT NULL, priority INTEGER NOT NULL, changed DATETIME NOT NULL DEFAULT current_timestamp)")
+		cursor.execute("CREATE TABLE T_Title (id INTEGER PRIMARY KEY, hash INTEGER NOT NULL UNIQUE, title TEXT NOT NULL, changed DATETIME NOT NULL DEFAULT current_timestamp)")
+		cursor.execute("CREATE TABLE T_Short_Description (id INTEGER PRIMARY KEY, hash INTEGER NOT NULL UNIQUE, short_description TEXT NOT NULL, changed DATETIME NOT NULL DEFAULT current_timestamp)")
+		cursor.execute("CREATE TABLE T_Extended_Description (id INTEGER PRIMARY KEY, hash INTEGER NOT NULL UNIQUE, extended_description TEXT NOT NULL, changed DATETIME NOT NULL DEFAULT current_timestamp)")
+		cursor.execute("CREATE TABLE T_Event (id INTEGER PRIMARY KEY, service_id INTEGER NOT NULL, begin_time INTEGER NOT NULL, duration INTEGER NOT NULL, source_id INTEGER NOT NULL, dvb_event_id INTEGER, changed DATETIME NOT NULL DEFAULT current_timestamp)")
+		cursor.execute("CREATE TABLE T_Data (event_id INTEGER NOT NULL, title_id INTEGER, short_description_id INTEGER, extended_description_id INTEGER, iso_639_language_code TEXT NOT NULL, changed DATETIME NOT NULL DEFAULT current_timestamp)")
+		cursor.execute("CREATE INDEX data_title ON T_Data (title_id)")
+		cursor.execute("CREATE INDEX data_shortdescr ON T_Data (short_description_id)")
+		cursor.execute("CREATE INDEX data_extdescr ON T_Data (extended_description_id)")
+		cursor.execute("CREATE INDEX service_sid ON T_Service (sid)")
+		cursor.execute("CREATE INDEX event_service_id_begin_time ON T_Event (service_id, begin_time)")
+		cursor.execute("CREATE INDEX event_dvb_id ON T_Event (dvb_event_id)")
+		cursor.execute("CREATE INDEX data_event_id ON T_Data (event_id)")
+		cursor.execute("CREATE TRIGGER tr_on_delete_cascade_t_event AFTER DELETE ON T_Event FOR EACH ROW BEGIN DELETE FROM T_Data WHERE event_id = OLD.id; END")
+		cursor.execute("CREATE TRIGGER tr_on_delete_cascade_t_service_t_event AFTER DELETE ON T_Service FOR EACH ROW BEGIN DELETE FROM T_Event WHERE service_id = OLD.id; END")
+		cursor.execute("CREATE TRIGGER tr_on_delete_cascade_t_data_t_title AFTER DELETE ON T_Data FOR EACH ROW WHEN ((SELECT event_id FROM T_Data WHERE title_id = OLD.title_id LIMIT 1) ISNULL) BEGIN DELETE FROM T_Title WHERE id = OLD.title_id; END")
+		cursor.execute("CREATE TRIGGER tr_on_delete_cascade_t_data_t_short_description AFTER DELETE ON T_Data FOR EACH ROW WHEN ((SELECT event_id FROM T_Data WHERE short_description_id = OLD.short_description_id LIMIT 1) ISNULL) BEGIN DELETE FROM T_Short_Description WHERE id = OLD.short_description_id; END")
+		cursor.execute("CREATE TRIGGER tr_on_delete_cascade_t_data_t_extended_description AFTER DELETE ON T_Data FOR EACH ROW WHEN ((SELECT event_id FROM T_Data WHERE extended_description_id = OLD.extended_description_id LIMIT 1) ISNULL) BEGIN DELETE FROM T_Extended_Description WHERE id = OLD.extended_description_id; END")
+		cursor.execute("CREATE TRIGGER tr_on_update_cascade_t_data AFTER UPDATE ON T_Data FOR EACH ROW WHEN (OLD.title_id <> NEW.title_id AND ((SELECT event_id FROM T_Data WHERE title_id = OLD.title_id LIMIT 1) ISNULL)) BEGIN DELETE FROM T_Title WHERE id = OLD.title_id; END")
+		cursor.execute("INSERT INTO T_Source (id,source_name,priority) VALUES('0','Sky Private EPG','0')")
+		cursor.execute("INSERT INTO T_Source (id,source_name,priority) VALUES('1','DVB Now/Next Table','0')")
+		cursor.execute("INSERT INTO T_Source (id,source_name,priority) VALUES('2','DVB Schedule (same Transponder)','0')")
+		cursor.execute("INSERT INTO T_Source (id,source_name,priority) VALUES('3','DVB Schedule Other (other Transponder)','0')")
+		cursor.execute("INSERT INTO T_Source (id,source_name,priority) VALUES('4','Viasat','0')")
+		connection.commit()
+		cursor.close()
+		connection.close()
+		log.write("[EPGImport] loading empty epg.db")
+		eEPGCache.load(self.epginstance)
+		self.session.open(MessageBox, _("EPG database was emptied"),  MessageBox.TYPE_INFO)
+
 
 class EPGImportProfile(ConfigListScreen, Screen):
-	skin = """
-		<screen position="center,center" size="400,230" title="EPGImportProfile" >
-			<widget name="config" position="0,0" size="400,180" scrollbarMode="showOnDemand" />
-			<widget name="key_red" position="0,190" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;18" transparent="1"/>
-			<widget name="key_green" position="140,190" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;18" transparent="1"/>
-			<ePixmap name="red" position="0,190" zPosition="2" size="140,40" pixmap="skin_default/buttons/red.png" transparent="1" alphatest="on" />
-			<ePixmap name="green" position="140,190" zPosition="2" size="140,40" pixmap="skin_default/buttons/green.png" transparent="1" alphatest="on" />
+	if sz_w >= 1920:
+		skin = """
+		<screen position="center,center" size="1200,820" title="EPGImportProfile" >
+			<ePixmap pixmap="skin_default/buttons/red.png" position="10,5" size="300,70" />
+			<ePixmap pixmap="skin_default/buttons/green.png" position="310,5" size="300,70" />
+			<widget backgroundColor="#9f1313" font="Regular;30" halign="center" name="key_red" position="10,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="300,70" transparent="1" valign="center" zPosition="1" />
+			<widget backgroundColor="#1f771f" font="Regular;30" halign="center" name="key_green" position="310,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="300,70" transparent="1" valign="center" zPosition="1" />
+			<widget font="Regular;34" halign="right" position="1050,25" render="Label" size="120,40" source="global.CurrentTime">
+				<convert type="ClockToText">Default</convert>
+			</widget>
+			<widget font="Regular;34" halign="right" position="800,25" render="Label" size="240,40" source="global.CurrentTime">
+				<convert type="ClockToText">Date</convert>
+			</widget>
+			<eLabel backgroundColor="grey" position="10,80" size="1180,1" />
+			<widget enableWrapAround="1" name="config" position="10,90" scrollbarMode="showOnDemand" size="1180,720" />
+		</screen>"""
+	else:
+		skin = """
+		<screen position="center,center" size="820,520" title="EPGImportProfile" >
+			<ePixmap pixmap="skin_default/buttons/red.png" position="10,5" size="200,40"/>
+			<ePixmap pixmap="skin_default/buttons/green.png" position="210,5" size="200,40"/>
+			<widget name="key_red" position="10,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" backgroundColor="#9f1313" transparent="1" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2"/>
+			<widget name="key_green" position="210,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" backgroundColor="#1f771f" transparent="1" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2"/>
+			<eLabel position="10,50" size="800,1" backgroundColor="grey"/>
+			<widget name="config" position="10,55" size="800,450" enableWrapAround="1" scrollbarMode="showOnDemand"/>
 		</screen>"""
 
-	def __init__(self, session):
+	def __init__(self, session, args=0):
+		self.session = session
 		Screen.__init__(self, session)
-		self.setTitle(_("Days Profile"))
+		# self.setTitle(_("Days Profile"))
 		self.list = []
 		for i in range(7):
 			self.list.append(getConfigListEntry(weekdays[i], config.plugins.extra_epgimport.day_import[i]))
@@ -873,10 +994,10 @@ class EPGImportProfile(ConfigListScreen, Screen):
 		self["setupActions"] = ActionMap(
 			["SetupActions", "ColorActions"],
 			{
-				"red": self.keyCancel,
+				"red": self.cancel,
 				"green": self.save,
 				"save": self.save,
-				"cancel": self.keyCancel,
+				"cancel": self.cancel,
 				"ok": self.save
 			},
 			-2
@@ -884,7 +1005,8 @@ class EPGImportProfile(ConfigListScreen, Screen):
 		self.onLayoutFinish.append(self.setCustomTitle)
 
 	def setCustomTitle(self):
-		self.setTitle(_("Days Profile"))
+		# self.setTitle(_("Days Profile"))
+		pass
 
 	def save(self):
 		if not config.plugins.extra_epgimport.day_import[0].value:
@@ -898,9 +1020,9 @@ class EPGImportProfile(ConfigListScreen, Screen):
 									return
 		ConfigListScreen.keySave(self)
 		"""
-		# for x in self["config"].list:
-			# x[1].save()
-		# self.close()
+		for x in self["config"].list:
+			x[1].save()
+		self.close()
 		"""
 
 	def cancel(self):
@@ -909,53 +1031,89 @@ class EPGImportProfile(ConfigListScreen, Screen):
 		self.close()
 
 
-class EPGImportLog(Screen):
-	skin = """
-		<screen position="center,center" size="560,400" title="EPG Import Log" >
-			<ePixmap name="red" position="0,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/red.png" transparent="1" alphatest="on" />
-			<ePixmap name="green" position="140,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/green.png" transparent="1" alphatest="on" />
-			<ePixmap name="yellow" position="280,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/yellow.png" transparent="1" alphatest="on" />
-			<ePixmap name="blue" position="420,0" zPosition="2" size="140,40" pixmap="skin_default/buttons/blue.png" transparent="1" alphatest="on" />
-			<widget name="key_red" position="0,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;20" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-			<widget name="key_green" position="140,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;20" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-			<widget name="key_yellow" position="280,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;20" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-			<widget name="key_blue" position="420,0" size="140,40" valign="center" halign="center" zPosition="4" foregroundColor="white" font="Regular;20" transparent="1" shadowColor="background" shadowOffset="-2,-2" />
-			<ePixmap alphatest="on" pixmap="skin_default/icons/clock.png" position="480,383" size="14,14" zPosition="3"/>
-			<widget font="Regular;18" halign="left" position="505,380" render="Label" size="55,20" source="global.CurrentTime" transparent="1" valign="center" zPosition="3">
-				<convert type="ClockToText">Default</convert>
-			</widget>
-			<widget name="list" position="10,40" size="540,340" />
-		</screen>"""
+class EPGImportLogx(Screen):
+	if sz_w >= 1920:
+		skin = """
+			<screen position="center,center" size="1200,820" title="EPG Import Log"  >
+				<ePixmap pixmap="skin_default/buttons/red.png" position="10,5" size="295,70" />
+				<ePixmap pixmap="skin_default/buttons/green.png" position="305,5" size="295,70" />
+				<ePixmap pixmap="skin_default/buttons/yellow.png" position="600,5" size="295,70" />
+				<ePixmap pixmap="skin_default/buttons/blue.png" position="895,5" size="295,70" />
+				<widget backgroundColor="#9f1313" font="Regular;30" halign="center" name="key_red" position="10,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="295,70" transparent="1" valign="center" zPosition="1" />
+				<widget backgroundColor="#1f771f" font="Regular;30" halign="center" name="key_green" position="305,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="295,70" transparent="1" valign="center" zPosition="1" />
+				<widget backgroundColor="#a08500" font="Regular;30" halign="center" name="key_yellow" position="600,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="295,70" transparent="1" valign="center" zPosition="1" />
+				<widget backgroundColor="#18188b" font="Regular;30" halign="center" name="key_blue" position="895,5" foregroundColor="white" shadowColor="black" shadowOffset="-2,-2" size="295,70" transparent="1" valign="center" zPosition="1" />
+				<eLabel backgroundColor="grey" position="10,80" size="1180,1" />
+				<!--  <widget name="list" position="10,90" size="1180,720" /> -->
+				<widget font="Regular;34" name="list" position="10,90" size="1180,720" halign="left" valign="top" />
+			</screen>"""
+	else:
+		skin = """
+			<screen position="center,center" size="820,520" title="EPG Import Log" >
+				<ePixmap pixmap="skin_default/buttons/red.png" position="10,5" size="200,40" />
+				<ePixmap pixmap="skin_default/buttons/green.png" position="210,5" size="200,40" />
+				<ePixmap pixmap="skin_default/buttons/yellow.png" position="410,5" size="200,40" />
+				<ePixmap pixmap="skin_default/buttons/blue.png" position="610,5" size="200,40" />
+				<widget name="key_red" position="10,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" foregroundColor="white" backgroundColor="#9f1313" transparent="1" shadowColor="black" shadowOffset="-2,-2" />
+				<widget name="key_green" position="210,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" foregroundColor="white" backgroundColor="#1f771f" transparent="1" shadowColor="black" shadowOffset="-2,-2" />
+				<widget name="key_yellow" position="410,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" foregroundColor="white" backgroundColor="#a08500" transparent="1" shadowColor="black" shadowOffset="-2,-2" />
+				<widget name="key_blue" position="610,5" size="200,40" zPosition="1" font="Regular;20" halign="center" valign="center" foregroundColor="white" backgroundColor="#18188b" transparent="1" shadowColor="black" shadowOffset="-2,-2" />
+				<eLabel position="10,50" size="800,1" backgroundColor="grey" />
+				<widget name="list" position="10,60" size="800,450" font="Regular;22"/>
+			</screen>"""
 
 	def __init__(self, session):
 		self.session = session
 		Screen.__init__(self, session)
-		self.setTitle(_("EPG Import Log"))
 		self.log = log
 		self["key_red"] = Button(_("Clear"))
 		self["key_green"] = Button()
 		self["key_yellow"] = Button()
 		self["key_blue"] = Button(_("Save"))
-		self["list"] = ScrollLabel(self.log.getvalue())
-		self["actions"] = ActionMap(
-			["DirectionActions", "OkCancelActions", "ColorActions"],
-			{
-				"red": self.clear,
-				"green": self.cancel,
-				"yellow": self.cancel,
-				"save": self.save,
-				"blue": self.save,
-				"cancel": self.cancel,
-				"ok": self.cancel,
-				"left": self["list"].pageUp,
-				"right": self["list"].pageDown,
-				"up": self["list"].pageUp,
-				"down": self["list"].pageDown,
-				"pageUp": self["list"].pageUp,
-				"pageDown": self["list"].pageDown
-			},
-			-2
-		)
+		# # crash on scrolllabel
+		# self["list"] = ScrollLabel("")
+		# self["list"].setText(self.log.getvalue())
+		self.text_lines = self.log.getvalue().splitlines()
+		self.current_line = 0
+		self.visible_lines_count = 20
+		self["list"] = Label("")
+		self.updateText()
+		self["actions"] = ActionMap(["DirectionActions", "OkCancelActions", "ColorActions", "MenuActions"], {
+			"red": self.clear,
+			"green": self.cancel,
+			"yellow": self.cancel,
+			"save": self.save,
+			"blue": self.save,
+			"cancel": self.cancel,
+			"ok": self.cancel,
+			"left": self.scrollUp,
+			"right": self.scrollDown,
+			"up": self.scrollUp,
+			"down": self.scrollDown,
+			"pageUp": self.scrollUp,
+			"pageDown": self.scrollDown,
+			"menu": self.cancel}, -2)
+		self.onLayoutFinish.append(self.setCustomTitle)
+
+	def setCustomTitle(self):
+		pass
+
+	def updateText(self):
+		"""Aggiorna il testo mostrato nel `Label` in base alla riga corrente."""
+		visible_lines = self.text_lines[self.current_line:self.current_line + self.visible_lines_count]
+		self["list"].setText("\n".join(visible_lines))
+
+	def scrollUp(self):
+		"""Scorri il testo verso l'alto di 20 righe."""
+		if self.current_line > 0:
+			self.current_line = max(0, self.current_line - self.visible_lines_count)  # Non andare sotto la riga 0
+			self.updateText()
+
+	def scrollDown(self):
+		"""Scorri il testo verso il basso di 20 righe."""
+		if self.current_line + self.visible_lines_count < len(self.text_lines):
+			self.current_line = min(len(self.text_lines) - self.visible_lines_count, self.current_line + self.visible_lines_count)
+			self.updateText()
 
 	def save(self):
 		try:
@@ -984,7 +1142,7 @@ def msgClosed(ret):
 	global autoStartTimer
 	if ret:
 		if autoStartTimer is not None and not epgimport.isImportRunning():
-			print("[EPGImport] Run manual starting import", file=log)
+			print("[EPGImport] Run manual starting import")
 			autoStartTimer.runImport()
 
 
@@ -996,7 +1154,15 @@ def main(session, **kwargs):
 	session.openWithCallback(doneConfiguring, EPGImportConfig)
 
 
+def main_menu(menuid, **kwargs):
+	if menuid == "mainmenu" and config.plugins.epgimport.showinmainmenu.getValue():
+		return [(_("EPG Importer"), start_import, "epgimporter", 45)]
+	else:
+		return []
+
+
 def doneConfiguring(retval=False):
+	'''user has closed configuration, check new values....'''
 	if retval is True:
 		if autoStartTimer is not None:
 			autoStartTimer.update(clock=True)
@@ -1017,17 +1183,17 @@ def doneImport(reboot=False, epgfile=None):
 		lastimport = "%s, %d" % (localtime, count)
 		config.plugins.extra_epgimport.last_import.value = lastimport
 		config.plugins.extra_epgimport.last_import.save()
-		print("[EPGImport] Save last import date and count event", file=log)
+		print("[EPGImport] Save last import date and count event")
 	except:
-		print("[EPGImport] Error to save last import date and count event", file=log)
+		print("[EPGImport] Error to save last import date and count event")
 	if reboot:
 		if Screens.Standby.inStandby:
-			print("[EPGImport] Restart enigma2", file=log)
+			print("[EPGImport] Restart enigma2")
 			restartEnigma(True)
 		else:
 			msg = _("EPG Import finished, %d events") % epgimport.eventCount + "\n" + _("You must restart Enigma2 to load the EPG data,\nis this OK?")
 			_session.openWithCallback(restartEnigma, MessageBox, msg, MessageBox.TYPE_YESNO, timeout=15, default=True)
-			print("[EPGImport] Need restart enigma2", file=log)
+			print("[EPGImport] Need restart enigma2")
 	else:
 		if config.plugins.epgimport.parse_autotimer.value and (fileExists(resolveFilename(SCOPE_PLUGINS, "Extensions/AutoTimer/plugin.pyo")) or fileExists(resolveFilename(SCOPE_PLUGINS, "Extensions/AutoTimer/plugin.pyc"))):
 			try:
@@ -1038,9 +1204,9 @@ def doneImport(reboot=False, epgfile=None):
 				autotimer.readXml()
 				checkDeepstandby(_session, parse=True)
 				autotimer.parseEPGAsync(simulateOnly=False)
-				print("[EPGImport] Run start parse autotimers", file=log)
+				print("[EPGImport] Run start parse autotimers")
 			except:
-				print("[EPGImport] Could not start autotimers", file=log)
+				print("[EPGImport] Could not start autotimers")
 				checkDeepstandby(_session, parse=False)
 		else:
 			checkDeepstandby(_session, parse=False)
@@ -1054,7 +1220,7 @@ class checkDeepstandby:
 				self.FirstwaitCheck = eTimer()
 				self.FirstwaitCheck.callback.append(self.runCheckDeepstandby)
 				self.FirstwaitCheck.startLongTimer(600)
-				print("[EPGImport] Wait for parse autotimers 600 sec.", file=log)
+				print("[EPGImport] Wait for parse autotimers 600 sec.")
 			else:
 				self.runCheckDeepstandby()
 
@@ -1064,10 +1230,10 @@ class checkDeepstandby:
 			if config.plugins.epgimport.deepstandby_afterimport.value and getFPWasTimerWakeup():
 				config.plugins.epgimport.deepstandby_afterimport.value = False
 				if Screens.Standby.inStandby and not self.session.nav.getRecordings() and not Screens.Standby.inTryQuitMainloop:
-					print("[EPGImport] Returning to deep standby after wake up for import", file=log)
+					print("[EPGImport] Returning to deep standby after wake up for import")
 					self.session.open(Screens.Standby.TryQuitMainloop, 1)
 				else:
-					print("[EPGImport] No return to deep standby, not standby or running recording", file=log)
+					print("[EPGImport] No return to deep standby, not standby or running recording")
 
 
 def restartEnigma(confirmed):
@@ -1078,7 +1244,7 @@ def restartEnigma(confirmed):
 		try:
 			open('/tmp/enigmastandby', 'wb').close()
 		except:
-			print("Failed to create /tmp/enigmastandby", file=log)
+			print("Failed to create /tmp/enigmastandby")
 	else:
 		try:
 			os.remove("/tmp/enigmastandby")
@@ -1097,12 +1263,22 @@ class AutoStartTimer:
 		self.prev_multibouquet = config.usage.multibouquet.value
 		self.clock = config.plugins.epgimport.wakeup.value
 		self.autoStartImport = eTimer()
-		self.autoStartImport.callback.append(self.onTimer)
+		if isDreambox:
+			self.autoStartImport_conn = self.autoStartImport.timeout.connect(self.onTimer)
+		else:
+			self.autoStartImport.callback.append(self.onTimer)
 		self.onceRepeatImport = eTimer()
-		self.onceRepeatImport.callback.append(self.runImport)
+		if isDreambox:
+			self.onceRepeatImport_conn = self.onceRepeatImport.timeout.connect(self.runImport)
+		else:
+			self.onceRepeatImport.callback.append(self.runImport)
 		self.pauseAfterFinishImportCheck = eTimer()
-		self.pauseAfterFinishImportCheck.callback.append(self.afterFinishImportCheck)
+		if isDreambox:
+			self.pauseAfterFinishImportCheck_conn = self.pauseAfterFinishImportCheck.timeout.connect(self.afterFinishImportCheck)
+		else:
+			self.pauseAfterFinishImportCheck.callback.append(self.afterFinishImportCheck)
 		self.pauseAfterFinishImportCheck.startLongTimer(30)
+
 		self.container = None
 		config.misc.standbyCounter.addNotifier(self.standbyCounterChangedRunImport)
 		self.update()
@@ -1128,7 +1304,7 @@ class AutoStartTimer:
 			cur_day = int(now_day.tm_wday)
 			wakeup_day = WakeupDayOfWeek()
 			if wakeup_day == -1:
-				print("[EPGImport] wakeup day of week disabled", file=log)
+				print("[EPGImport] wakeup day of week disabled")
 				return -1
 			if wake < now + atLeast:
 				wake += 86400 * wakeup_day
@@ -1143,7 +1319,7 @@ class AutoStartTimer:
 		now_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now))
 		wake_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(wake)) if wake > 0 else "Not set"
 
-		print("[EPGImport] WakeUpTime now set to", wake_str, "(now=%s)" % now_str, file=log)
+		print("[EPGImport] WakeUpTime now set to", wake_str, "(now=%s)" % now_str)
 		return wake
 
 	def runImport(self):
@@ -1160,7 +1336,15 @@ class AutoStartTimer:
 				if self.container:
 					del self.container
 				self.container = eConsoleAppContainer()
-				self.container.appClosed.append(self.executeShellEnd)
+				self.run = 0
+				self.finished = False
+				try:
+					self.container.appClosed.append(self.executeShellEnd)
+					# self.container.dataAvail.append(self.dataAvail)
+				except:
+					self.container.appClosed_conn = self.container.appClosed.connect(self.executeShellEnd)
+					# self.container.dataAvail_conn = self.container.dataAvail.connect(self.dataAvail)
+
 				if self.container.execute(config.plugins.epgimport.shell_name.value):
 					self.executeShellEnd(-1)
 			else:
@@ -1169,15 +1353,22 @@ class AutoStartTimer:
 			self.session.open(MessageBox, _("No source file found !"), MessageBox.TYPE_INFO, timeout=5)
 
 	def executeShellEnd(self, retval):
-		if self.container:
-			self.container.appClosed.remove(self.executeShellEnd)
-			self.container = None
-		startImport()
+		if retval:
+			if self.container:
+				try:  # DreamOS
+					self.container.appClosed.remove(self.executeShellEnd)
+					# self.container.dataAvail.remove(self.dataAvail)
+				except:
+					self.container.appClosed_conn = None
+					# self.container.dataAvail_conn = None
+				self.container.kill()
+				self.container = None
+			startImport()
 
 	def onTimer(self):
 		self.autoStartImport.stop()
 		now = int(time.time())
-		print("[EPGImport] onTimer occured at", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now)), file=log)
+		print("[EPGImport] onTimer occured at", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now)))
 		wake = self.getWakeTime()
 		# If we're close enough, we're okay...
 		atLeast = 0
@@ -1186,7 +1377,7 @@ class AutoStartTimer:
 			repeat_time = config.plugins.epgimport.repeat_import.value
 			if repeat_time:
 				self.onceRepeatImport.startLongTimer(repeat_time * 3600)
-				print("[EPGImport] start once repeat timer, wait in nours -", repeat_time, file=log)
+				print("[EPGImport] start once repeat timer, wait in nours -", repeat_time)
 			atLeast = 60
 		self.update(atLeast)
 
@@ -1206,7 +1397,7 @@ class AutoStartTimer:
 			cur_day = int(now_day.tm_wday)
 			wakeup_day = WakeupDayOfWeek()
 			if wakeup_day == -1:
-				print("[EPGImport] wakeup day of week disabled", file=log)
+				print("[EPGImport] wakeup day of week disabled")
 				return -1
 			if wake_up < now:
 				wake_up += 86400 * wakeup_day
@@ -1220,7 +1411,7 @@ class AutoStartTimer:
 	def afterFinishImportCheck(self):
 		if config.plugins.epgimport.deepstandby.value == 'wakeup' and getFPWasTimerWakeup():
 			if os.path.exists("/tmp/enigmastandby") or os.path.exists("/tmp/.EPGImportAnswerBoot"):
-				print("[EPGImport] is restart enigma2", file=log)
+				print("[EPGImport] is restart enigma2")
 			else:
 				wake = self.getStatus()
 				now_t = time.time()
@@ -1229,22 +1420,26 @@ class AutoStartTimer:
 					if config.plugins.epgimport.standby_afterwakeup.value:
 						if not Screens.Standby.inStandby:
 							Notifications.AddNotification(Screens.Standby.Standby)
-							print("[EPGImport] Run to standby after wake up", file=log)
+							print("[EPGImport] Run to standby after wake up")
 					if config.plugins.epgimport.shutdown.value:
 						if not config.plugins.epgimport.standby_afterwakeup.value:
 							if not Screens.Standby.inStandby:
 								Notifications.AddNotification(Screens.Standby.Standby)
-								print("[EPGImport] Run to standby after wake up for checking", file=log)
+								print("[EPGImport] Run to standby after wake up for checking")
 						if not config.plugins.epgimport.deepstandby_afterimport.value:
 							config.plugins.epgimport.deepstandby_afterimport.value = True
 							self.wait_timer = eTimer()
-							self.wait_timer.timeout.get().append(self.startStandby)
-							print("[EPGImport] start wait_timer (10sec) for goto standby", file=log)
+							# self.wait_timer.timeout.get().append(self.startStandby)
+							if isDreambox:
+								self.wait_timer_conn = self.wait_timer.timeout.connect(self.startStandby)
+							else:
+								self.wait_timer.callback.append(self.startStandby)
+							print("[EPGImport] start wait_timer (10sec) for goto standby")
 							self.wait_timer.start(10000, True)
 
 	def afterStandbyRunImport(self):
 		if config.plugins.epgimport.run_after_standby.value:
-			print("[EPGImport] start import after standby", file=log)
+			print("[EPGImport] start import after standby")
 			self.runImport()
 
 	def standbyCounterChangedRunImport(self, configElement):
@@ -1253,21 +1448,21 @@ class AutoStartTimer:
 				if self.afterStandbyRunImport not in Screens.Standby.inStandby.onClose:
 					Screens.Standby.inStandby.onClose.append(self.afterStandbyRunImport)
 			except:
-				print("[EPGImport] error inStandby.onClose append afterStandbyRunImport", file=log)
+				print("[EPGImport] error inStandby.onClose append afterStandbyRunImport")
 
 	def startStandby(self):
 		if Screens.Standby.inStandby:
-			print("[EPGImport] add checking standby", file=log)
+			print("[EPGImport] add checking standby")
 			try:
 				if self.onLeaveStandbyFinishImportCheck not in Screens.Standby.inStandby.onClose:
 					Screens.Standby.inStandby.onClose.append(self.onLeaveStandbyFinishImportCheck)
 			except:
-				print("[EPGImport] error inStandby.onClose append .onLeaveStandbyFinishImportCheck", file=log)
+				print("[EPGImport] error inStandby.onClose append .onLeaveStandbyFinishImportCheck")
 
 	def onLeaveStandbyFinishImportCheck(self):
 		if config.plugins.epgimport.deepstandby_afterimport.value:
 			config.plugins.epgimport.deepstandby_afterimport.value = False
-			print("[EPGImport] checking standby remove, not deep standby after import", file=log)
+			print("[EPGImport] checking standby remove, not deep standby after import")
 
 
 def WakeupDayOfWeek():
@@ -1287,43 +1482,43 @@ def WakeupDayOfWeek():
 
 def onBootStartCheck():
 	global autoStartTimer
-	print("[EPGImport] onBootStartCheck", file=log)
+	print("[EPGImport] onBootStartCheck")
 	now = int(time.time())
 	wake = autoStartTimer.getStatus()
-	print("[EPGImport] now=%d wake=%d wake-now=%d" % (now, wake, wake - now), file=log)
+	print("[EPGImport] now=%d wake=%d wake-now=%d" % (now, wake, wake - now))
 	if (wake < 0) or (wake - now > 600):
 		runboot = config.plugins.epgimport.runboot.value
 		on_start = False
 		if runboot == "1":
 			on_start = True
-			print("[EPGImport] is always boot", file=log)
+			print("[EPGImport] is always boot")
 		elif runboot == "2" and not getFPWasTimerWakeup():
 			on_start = True
-			print("[EPGImport] is manual boot", file=log)
+			print("[EPGImport] is manual boot")
 		elif runboot == "3" and getFPWasTimerWakeup():
 			on_start = True
-			print("[EPGImport] is automatic boot", file=log)
+			print("[EPGImport] is automatic boot")
 		flag = '/tmp/.EPGImportAnswerBoot'
 		if config.plugins.epgimport.runboot_restart.value:
 			if os.path.exists(flag):
 				on_start = False
-				print("[EPGImport] not starting import - is restart enigma2", file=log)
+				print("[EPGImport] not starting import - is restart enigma2")
 			else:
 				try:
 					open(flag, 'wb').close()
 				except:
-					print("Failed to create /tmp/.EPGImportAnswerBoot", file=log)
+					print("Failed to create /tmp/.EPGImportAnswerBoot")
 		if config.plugins.epgimport.runboot_day.value:
 			now = time.localtime()
 			cur_day = int(now.tm_wday)
 			if not config.plugins.extra_epgimport.day_import[cur_day].value:
 				on_start = False
-				print("[EPGImport] wakeup day of week does not match", file=log)
+				print("[EPGImport] wakeup day of week does not match")
 		if on_start:
-			print("[EPGImport] starting import because auto-run on boot is enabled", file=log)
+			print("[EPGImport] starting import because auto-run on boot is enabled")
 			autoStartTimer.runImport()
 	else:
-		print("[EPGImport] import to start in less than 10 minutes anyway, skipping...", file=log)
+		print("[EPGImport] import to start in less than 10 minutes anyway, skipping...")
 
 
 def autostart(reason, session=None, **kwargs):
@@ -1332,9 +1527,7 @@ def autostart(reason, session=None, **kwargs):
 	global _session
 	if reason == 0 and _session is None:
 		nms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
-		# log.write("[EPGImport] autostart (%s) occured at (%s)" % (reason, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
-		# print("[EPGImport] autostart (%s) occured at" % reason, time.time(), file=log)
-		print("[EPGImport] autostart (%s) occured at" % reason, nms, file=log)
+		print("[EPGImport] autostart (%s) occured at %s" % (reason, nms))
 		if session is not None:
 			_session = session
 			if autoStartTimer is None:
@@ -1343,20 +1536,22 @@ def autostart(reason, session=None, **kwargs):
 				onBootStartCheck()
 		# If WE caused the reboot, put the box back in standby.
 		if os.path.exists("/tmp/enigmastandby"):
-			print("[EPGImport] Returning to standby", file=log)
+			print("[EPGImport] Returning to standby")
 			if not Screens.Standby.inStandby:
 				Notifications.AddNotification(Screens.Standby.Standby)
 			try:
 				os.remove("/tmp/enigmastandby")
 			except:
 				pass
+	else:
+		log.write("[EPGImport] Stop")
 
 
 def getNextWakeup():
-	"returns timestamp of next time when autostart should be called"
+	"""returns timestamp of next time when autostart should be called"""
 	if autoStartTimer:
 		if config.plugins.epgimport.enabled.value and config.plugins.epgimport.deepstandby.value == 'wakeup' and autoStartTimer.getSources():
-			print("[EPGImport] Will wake up from deep sleep", file=log)
+			print("[EPGImport] Will wake up from deep sleep")
 			return autoStartTimer.getStatus()
 	return -1
 
@@ -1378,9 +1573,34 @@ def setExtensionsmenu(el):
 		print("[EPGImport] Failed to update extensions menu:", e)
 
 
+# we need this helper function to identify the descriptor
+def extensionsmenu(session, **kwargs):
+	main(session, **kwargs)
+
+
 description = _("Automated EPG Importer")
 config.plugins.epgimport.showinextensions.addNotifier(setExtensionsmenu, initial_call=False, immediate_feedback=False)
-extDescriptor = PluginDescriptor(name=_("EPG import now"), description=description, where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=start_import)
+# extDescriptor = PluginDescriptor(name=_("EPG import now"), description=description, where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=start_import)
+extDescriptor = PluginDescriptor(name=_("EPGImport"), description=description, where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=extensionsmenu)
+pluginlist = PluginDescriptor(name=_("EPGImport"), description=description, where=PluginDescriptor.WHERE_PLUGINMENU, icon='plugin.png', fnc=main)
+
+
+def epgmenu(menuid, **kwargs):
+	if menuid == "setup":
+		return [(_("EPGImport"), main, "epgimporter", 1002)]
+	else:
+		return []
+
+
+'''
+# PluginDescriptor(
+	# name=_("EPGImport"),
+	# description=description,
+	# where=PluginDescriptor.WHERE_PLUGINMENU,
+	# icon='plugin.png',
+	# fnc=main
+# ),
+'''
 
 
 def Plugins(**kwargs):
@@ -1392,3 +1612,31 @@ def Plugins(**kwargs):
 	if config.plugins.epgimport.showinextensions.value:
 		result.append(extDescriptor)
 	return result
+
+
+"""
+# def Plugins(**kwargs):
+	# result = [
+		# PluginDescriptor(
+			# name="EPGImport",
+			# description=description,
+			# where=[
+				# PluginDescriptor.WHERE_AUTOSTART,
+				# PluginDescriptor.WHERE_SESSIONSTART
+			# ],
+			# fnc=autostart,
+			# wakeupfnc=getNextWakeup
+		# ),
+		# PluginDescriptor(
+			# name="EPG importer",
+			# description=description,
+			# where=PluginDescriptor.WHERE_MENU,
+			# fnc=epgmenu  # fnc=main_menu
+		# ),
+	# ]
+	# if config.plugins.epgimport.showinextensions.value:
+		# result.append(extDescriptor)
+	# if config.plugins.epgimport.showinplugins.value:
+		# result.append(pluginlist)
+	# return result
+"""
