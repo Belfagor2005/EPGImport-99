@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
 from . import xmltvconverter
 
 date_format = '%Y%m%d%H%M%S'
