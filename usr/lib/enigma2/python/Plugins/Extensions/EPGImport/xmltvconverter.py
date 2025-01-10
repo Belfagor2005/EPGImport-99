@@ -1,10 +1,11 @@
 from __future__ import absolute_import
 from __future__ import print_function
+
+from xml.etree.cElementTree import iterparse
+from xml.sax.saxutils import unescape
 import six
 import calendar
 import time
-from xml.etree.cElementTree import iterparse
-from xml.sax.saxutils import unescape
 
 from . import log
 
@@ -12,6 +13,8 @@ try:
 	basestring
 except NameError:
 	basestring = str
+
+
 # %Y%m%d%H%M%S
 
 
@@ -87,7 +90,6 @@ def enumerateProgrammes(fp):
 				elem.clear()
 		except Exception as e:
 			print("[XMLTVConverter] enumerateProgrammes error:", e)
-			break
 
 
 class XMLTVConverter:
@@ -102,7 +104,7 @@ class XMLTVConverter:
 		print("[XMLTVConverter] Using a custom time offset of %d" % offset)
 
 	def enumFile(self, fileobj):
-		print("[XMLTVConverter] Enumerating event information", file=log)
+		print("[XMLTVConverter] Enumerating event information")
 		lastUnknown = None
 		# there is nothing no enumerate if there are no channels loaded
 		if not self.channels:
@@ -112,7 +114,7 @@ class XMLTVConverter:
 			channel = channel.lower()
 			if channel not in self.channels:
 				if lastUnknown != channel:
-					print("Unknown channel: ", channel, file=log)
+					print("Unknown channel: ", channel)
 					lastUnknown = channel
 				# return a None object to give up time to the reactor.
 				yield None

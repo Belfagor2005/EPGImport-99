@@ -1,12 +1,13 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
 # To test this script on something that is not a Dreambox, such as a Windows PC
 # just run it with Python. You'll need Python's "twisted" library.
 # Supply the test .xml files on the command line, and the input files
 # where they can be found. On Linux, you can also download from the internet,
 # on windows the xmltv files must be local files.
-
+#
 from __future__ import absolute_import, print_function
-
 import sys
 import time
 
@@ -19,10 +20,13 @@ EPGImport.HDD_EPG_DAT = "./epg.dat.new"
 
 
 class FakeEnigma:
+
 	def getInstance(self):
 		return self
+
 	# def load(self):
 		# print("...load...")
+
 	# def importEvents(self, *args):
 		# print(args)
 
@@ -41,7 +45,7 @@ def importFrom(epgimport, sourceXml):
 				if self.r is r:
 					self.r = None
 				else:
-					raise Exception("Removed reader without adding it")
+					print("Removed reader without adding it")
 
 			def run(self):
 				while self.r is not None:
