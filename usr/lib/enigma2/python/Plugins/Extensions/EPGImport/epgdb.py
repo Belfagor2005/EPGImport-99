@@ -1,14 +1,14 @@
 from __future__ import print_function
 from __future__ import division
 
-from . import isDreambox
 from os import path as os_path, remove as os_remove
-import time
 from enigma import eEPGCache, cachestate
 from ServiceReference import ServiceReference
 from sqlite3 import dbapi2 as sqlite
 from Components.config import config
 from enigma import eTimer
+import time
+
 """
 GREENC = '\033[32m'
 ENDC = '\033[m'
@@ -35,15 +35,17 @@ class epgdb_class:
 		self.events_in_past_journal = 0
 		self.events_in_import_range_journal = 0
 		self.epgdb_path = config.misc.epgcache_filename.value
+
 		if epgdb_path is None:
 			self.epgdb_path = config.misc.epgcache_filename.value
 		else:
 			self.epgdb_path = epgdb_path
 		self.ProcessingTimer = eTimer()
-		if isDreambox:
+		if os_path.exists("/var/lib/dpkg/status"):
 			self.ProcessingTimer_conn = self.ProcessingTimer.timeout.connect(self.start_process)
 		else:
 			self.ProcessingTimer.callback.append(self.start_process)
+
 		self.connection = None
 		if clear_oldepg:
 			self.create_empty()
@@ -215,7 +217,7 @@ class epgdb_class:
 					self.extended_hash = eEPGCache.getStringHash(self.extended_d)
 					# generate an unique dvb event id < 65536
 					self.dvb_event_id = (self.begin_time - int(self.begin_time // 3932160) * 3932160) // 60
-#                   print("dvb event id: %d" % self.dvb_event_id)
+					# print("dvb event id: %d" % self.dvb_event_id)
 					if self.short_hash > 2147483647:
 						self.short_hash -= 4294967296
 					if self.long_hash > 2147483647:
