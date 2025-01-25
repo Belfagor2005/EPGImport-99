@@ -17,7 +17,7 @@ from Components.Label import Label
 from Components.Sources.StaticText import StaticText
 from Components.config import config, ConfigEnableDisable, ConfigSubsection, \
 	ConfigYesNo, ConfigClock, getConfigListEntry, ConfigText, ConfigInteger, ConfigDirectory, \
-	ConfigSelection, ConfigNumber, ConfigSubDict, NoSave, configfile
+	ConfigSelection, ConfigNumber, ConfigSubDict, NoSave  # , configfile
 from Plugins.Plugin import PluginDescriptor
 from Screens.ChoiceBox import ChoiceBox
 from Screens.LocationBox import LocationBox
@@ -86,7 +86,7 @@ for mp in mount_points:
 
 
 # HDD_EPG_DAT = mount_point or '/etc/enigma2/epg.dat'
-HDD_EPG_DAT = '/etc/enigma2/epg.dat'
+HDD_EPG_DAT = '/hdd/epg.dat'
 if config.misc.epgcache_filename.value:
 	HDD_EPG_DAT = config.misc.epgcache_filename.value
 else:
@@ -295,12 +295,6 @@ epgimport = EPGImport.EPGImport(eEPGCache.getInstance(), channelFilter)
 lastImportResult = None
 
 
-if config.plugins.epgimport.filter_custom_channel.value:
-	filterCustomChannel = True
-else:
-	filterCustomChannel = False
-
-
 def startImport():
 	if not epgimport.isImportRunning():
 		EPGImport.HDD_EPG_DAT = config.misc.epgcache_filename.value
@@ -367,7 +361,8 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		Screen.__init__(self, session)
 		self.setup_title = _("EPG Import Configuration")
 		self["status"] = Label()
-		self["statusbar"] = Label()
+		# self["statusbar"] = Label()
+		self["statusbar"] = Label(_("Last import: %s events") % config.plugins.extra_epgimport.last_import.value)
 		self["key_red"] = Button(_("Cancel"))
 		self["key_green"] = Button(_("Save"))
 		self["key_yellow"] = Button(_("Manual"))
@@ -541,7 +536,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		if self["config"].isChanged():
 			for x in self["config"].list:
 				x[1].save()
-			configfile.save()
+			# configfile.save()
 			self.EPG.save()
 			self.session.open(MessageBox, _("Settings saved successfully !"), MessageBox.TYPE_INFO, timeout=5)
 		self.close(True)
@@ -1036,7 +1031,7 @@ class EPGImportProfile(ConfigListScreen, Screen):
 			<widget name="config" position="10,55" size="800,450" enableWrapAround="1" scrollbarMode="showOnDemand"/>
 		</screen>"""
 
-	def __init__(self, session, args=0):
+	def __init__(self, session):
 		self.session = session
 		Screen.__init__(self, session)
 		self.setTitle(_("Days Profile"))
@@ -1225,6 +1220,7 @@ def doneImport(reboot=False, epgfile=None):
 	formatted_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
 	lastImportResult = (formatted_time, epgimport.eventCount)
 	# lastImportResult = (time.time(), epgimport.eventCount)
+
 	try:
 		start, count = lastImportResult
 		localtime = time.asctime(time.localtime(time.time()))
@@ -1234,6 +1230,7 @@ def doneImport(reboot=False, epgfile=None):
 		print("[EPGImport] Save last import date and count event")
 	except:
 		print("[EPGImport] Error to save last import date and count event")
+
 	if reboot:
 		if Screens.Standby.inStandby:
 			print("[EPGImport] Restart enigma2")
@@ -1287,7 +1284,9 @@ class checkDeepstandby:
 def restartEnigma(confirmed):
 	if not confirmed:
 		return
+
 		# save state of enigma, so we can return to previeus state
+
 	if Screens.Standby.inStandby:
 		try:
 			open('/tmp/enigmastandby', 'wb').close()
@@ -1573,6 +1572,7 @@ def autostart(reason, session=None, **kwargs):
 	"""called with reason=1 to during shutdown, with reason=0 at startup?"""
 	global autoStartTimer
 	global _session
+
 	if reason == 0 and _session is None:
 		nms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
 		print("[EPGImport] autostart (%s) occured at %s" % (reason, nms))

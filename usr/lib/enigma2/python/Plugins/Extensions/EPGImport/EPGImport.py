@@ -116,13 +116,27 @@ def getParser(name):
 
 
 def getTimeFromHourAndMinutes(hour, minute):
+	# Check if the hour and minute are within valid ranges
 	if not (0 <= hour < 24):
 		raise ValueError("Hour must be between 0 and 23")
 	if not (0 <= minute < 60):
 		raise ValueError("Minute must be between 0 and 59")
+
+	# Get the current local time
 	now = time.localtime()
-	begin = int(time.mktime((now.tm_year, now.tm_mon, now.tm_mday,
-							 hour, minute, 0, now.tm_wday, now.tm_yday, now.tm_isdst)))
+
+	# Calculate the timestamp for the specified time (today with the given hour and minute)
+	begin = int(time.mktime((
+		now.tm_year,     # Current year
+		now.tm_mon,      # Current month
+		now.tm_mday,     # Current day
+		hour,            # Specified hour
+		minute,          # Specified minute
+		0,               # Seconds (set to 0)
+		now.tm_wday,     # Day of the week
+		now.tm_yday,     # Day of the year
+		now.tm_isdst     # Daylight saving time (DST)
+	)))
 	return begin
 
 
@@ -149,7 +163,7 @@ def bigStorage(minFree, default, *candidates):
 				if free > minFree:
 					return candidate
 			except Exception as e:
-				print("[EPGImport][bigStorage] Failed to stat %s: %s" % (default, e))
+				print("[EPGImport][bigStorage] Failed to stat %s:" % default, e)
 				continue
 	raise Exception("[EPGImport][bigStorage] Insufficient storage for download")
 

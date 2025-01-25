@@ -3,7 +3,7 @@ Version: 99.0
 Section: misc
 Priority: optional
 Architecture: all
-Maintainer: *
+Maintainer: Lululla
 Description: EPG Import
-Source: *
+Source: enigma2-plugin-extensions-epgimport
 Homepage: *

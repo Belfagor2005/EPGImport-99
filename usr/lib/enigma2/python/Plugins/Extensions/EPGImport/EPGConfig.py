@@ -12,7 +12,7 @@ from .filterCustomChannel import filterCustomChannel
 from . import log
 try:
 	import cPickle as pickle
-except:
+except ImportError:
 	import pickle
 
 # User selection stored here, so it goes into a user settings backup
@@ -26,7 +26,7 @@ def isLocalFile(filename):
 	return '://' not in filename
 
 
-def getChannels(path, name, offset):
+def getChannels(path, name=None, offset=None):
 	global channelCache
 	if name in channelCache:
 		return channelCache[name]
