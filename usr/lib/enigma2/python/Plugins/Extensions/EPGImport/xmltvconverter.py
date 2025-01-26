@@ -99,7 +99,7 @@ def get_time_utc(timestring, fdateparse):
     Returns:
         The UTC time as a Unix timestamp or 0 in case of an error.
     """
-    print("get_time_utc", timestring)
+    # print("get_time_utc", timestring)
 
     try:
         # Dividi la stringa in data e offset

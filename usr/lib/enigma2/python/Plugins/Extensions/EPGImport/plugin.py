@@ -55,7 +55,6 @@ def lastMACbyte():
 
 def calcDefaultStarttime():
 	try:
-		# Use the last MAC byte as time offset (half-minute intervals)
 		offset = lastMACbyte() * 30
 	except:
 		offset = 7680
