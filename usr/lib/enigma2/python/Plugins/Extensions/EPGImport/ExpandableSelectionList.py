@@ -6,7 +6,12 @@ from Components.MenuList import MenuList
 from enigma import RT_HALIGN_LEFT, eListboxPythonMultiContent, gFont, getDesktop
 from Tools.Directories import SCOPE_PLUGINS, resolveFilename
 from Tools.LoadPixmap import LoadPixmap
-from PIL import Image
+
+
+# try:
+	# import Image
+# except:
+	# from PIL import Image
 
 
 FHD = False
@@ -35,24 +40,24 @@ lock_on = LoadPixmap(PathPlugin + "icon/lock_on.png")
 lock_off = LoadPixmap(PathPlugin + "icon/lock_off.png")
 
 
-def fix_png(file_path):
-	try:
-		with Image.open(file_path) as img:
-			img.save(file_path, "PNG")
-			print(f"Corretto il profilo colore per: {file_path}")
-	except Exception as e:
-		print(f"Errore durante la correzione di {file_path}: {e}")
+# def fix_png(file_path):
+	# try:
+		# with Image.open(file_path) as img:
+			# img.save(file_path, "PNG")
+			# print("Corretto il profilo colore per: ", file_path)
+	# except Exception as e:
+		# print("Errore durante la correzione di %s" % file_path, e)
 
 
-images = [
-	expandableIcon,
-	expandedIcon,
-	lock_on,
-	lock_off
-]
+# images = [
+	# expandableIcon,
+	# expandedIcon,
+	# lock_on,
+	# lock_off
+# ]
 
-for image_path in images:
-	fix_png(image_path)
+# for image_path in images:
+	# fix_png(image_path)
 
 """
 if isDreambox:

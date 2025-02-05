@@ -1,6 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+from .filterCustomChannel import filterCustomChannel
+# from . import log
+
 from xml.etree.cElementTree import iterparse
 import gzip
 import os
@@ -8,8 +11,7 @@ import random
 import re
 import time
 
-from .filterCustomChannel import filterCustomChannel
-from . import log
+
 try:
 	import cPickle as pickle
 except ImportError:
