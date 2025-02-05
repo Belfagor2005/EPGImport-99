@@ -13,11 +13,10 @@ from Components.Button import Button
 from Components.ConfigList import ConfigListScreen
 from Components.Console import Console
 from Components.Label import Label
-# from Components.ScrollLabel import ScrollLabel
-from Components.Sources.StaticText import StaticText
 from Components.config import config, ConfigEnableDisable, ConfigSubsection, \
 	ConfigYesNo, ConfigClock, getConfigListEntry, ConfigText, ConfigInteger, ConfigDirectory, \
 	ConfigSelection, ConfigNumber, ConfigSubDict, NoSave  # , configfile
+from Components.Sources.StaticText import StaticText
 from Plugins.Plugin import PluginDescriptor
 from Screens.ChoiceBox import ChoiceBox
 from Screens.LocationBox import LocationBox
@@ -91,6 +90,7 @@ if config.misc.epgcache_filename.value:
 else:
 	config.misc.epgcache_filename.setValue(HDD_EPG_DAT)
 
+
 # Set default configuration
 config.plugins.epgimport = ConfigSubsection()
 config.plugins.epgimport.enabled = ConfigEnableDisable(default=False)
@@ -121,7 +121,7 @@ config.plugins.epgimport.run_after_standby = ConfigYesNo(default=False)
 config.plugins.epgimport.shutdown = ConfigYesNo(default=False)
 config.plugins.epgimport.longDescDays = ConfigNumber(default=5)
 config.plugins.epgimport.showinplugins = ConfigYesNo(default=True)
-config.plugins.epgimport.showinextensions = ConfigYesNo(default=False)
+config.plugins.epgimport.showinextensions = ConfigYesNo(default=True)
 config.plugins.epgimport.showinmainmenu = ConfigYesNo(default=False)
 config.plugins.epgimport.deepstandby_afterimport = NoSave(ConfigYesNo(default=False))
 config.plugins.epgimport.parse_autotimer = ConfigYesNo(default=False)
@@ -360,7 +360,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		Screen.__init__(self, session)
 		self.setup_title = _("EPG Import Configuration")
 		self["status"] = Label()
-		# self["statusbar"] = Label()
 		self["statusbar"] = Label(_("Last import: %s events") % config.plugins.extra_epgimport.last_import.value)
 		self["key_red"] = Button(_("Cancel"))
 		self["key_green"] = Button(_("Save"))
@@ -395,12 +394,14 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self.filterStatusTemplate = _("Filtering: %s\nPlease wait!")
 		self.importStatusTemplate = _("Importing: %s\n%s events")
 		self.updateTimer = eTimer()
-		self.updateTimer.callback.append(self.updateStatus)
+		if isDreambox:
+			self.updateTimer_conn = self.updateTimer.timeout.connect(self.updateStatus)
+		else:
+			self.updateTimer.callback.append(self.updateStatus)
 		self.updateTimer.start(1000)
 		# self.updateStatus()
 		self.onLayoutFinish.append(self.__layoutFinished)
 
-	# for summary:
 	def changedEntry(self):
 		for x in self.onChangedEntry:
 			x()
@@ -431,6 +432,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 				else:
 					res[key] = val.value
 			return res
+
 		self.EPG = config.plugins.epgimport
 		self.prev_values = getPrevValues(self.EPG)
 		self.cfg_enabled = getConfigListEntry(_("Automatic import EPG"), self.EPG.enabled, _("When enabled, it allows you to schedule an automatic EPG update at the given days and time."))
@@ -815,7 +817,6 @@ class EPGImportSources(Screen):
 
 	def install_update(self, answer=False):
 		if answer:
-			# title = (_("Executing... \nPlease Wait..."))
 			installer_url = "https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer_source.sh"
 			cmd = "rm -rf /etc/epgimport/*;wget -q --no-check-certificate " + installer_url + " -O - | /bin/bash -x > /tmp/install_debug.log 2>&1"
 			if self.container:
@@ -823,8 +824,11 @@ class EPGImportSources(Screen):
 			self.container = eConsoleAppContainer()
 			self.run = 0
 			self.finished = False
-
-			self.container.appClosed.append(self.after_update)
+			# self.container.appClosed.append(self.after_update)
+			if isDreambox:
+				self.container.appClosed_conn = self.container.appClosed.connect(self.after_update)
+			else:
+				self.container.callback.append(self.after_update)
 			if self.container.execute(cmd):
 				print("Command executed successfully")
 			else:
@@ -953,6 +957,8 @@ class EPGImportSources(Screen):
 
 	def do_reset(self):
 		log.write("[EPGImport] create empty epg.db")
+		if isDreambox:
+			return
 		from epgdb import epgdb_class
 		epgdbfile = config.misc.epgcache_filename.value
 		print("[EPGImport] is located at %s" % epgdbfile)
@@ -1262,7 +1268,10 @@ class checkDeepstandby:
 		if config.plugins.epgimport.enabled.value:
 			if parse:
 				self.FirstwaitCheck = eTimer()
-				self.FirstwaitCheck.callback.append(self.runCheckDeepstandby)
+				if isDreambox:
+					self.FirstwaitCheck_conn = self.FirstwaitCheck.timeout.connect(self.runCheckDeepstandby)
+				else:
+					self.FirstwaitCheck.callback.append(self.runCheckDeepstandby)
 				self.FirstwaitCheck.startLongTimer(600)
 				print("[EPGImport] Wait for parse autotimers 600 sec.")
 			else:
@@ -1313,11 +1322,13 @@ class AutoStartTimer:
 			self.autoStartImport_conn = self.autoStartImport.timeout.connect(self.onTimer)
 		else:
 			self.autoStartImport.callback.append(self.onTimer)
+
 		self.onceRepeatImport = eTimer()
 		if isDreambox:
 			self.onceRepeatImport_conn = self.onceRepeatImport.timeout.connect(self.runImport)
 		else:
 			self.onceRepeatImport.callback.append(self.runImport)
+
 		self.pauseAfterFinishImportCheck = eTimer()
 		if isDreambox:
 			self.pauseAfterFinishImportCheck_conn = self.pauseAfterFinishImportCheck.timeout.connect(self.afterFinishImportCheck)
@@ -1385,12 +1396,16 @@ class AutoStartTimer:
 				self.container = eConsoleAppContainer()
 				self.run = 0
 				self.finished = False
-				try:
-					self.container.appClosed.append(self.executeShellEnd)
-					# self.container.dataAvail.append(self.dataAvail)
-				except:
+				# try:
+					# self.container.appClosed.append(self.executeShellEnd)
+					# # self.container.dataAvail.append(self.dataAvail)
+				# except:
+
+					# self.container.appClosed_conn = self.container.appClosed.connect(self.executeShellEnd)
+				if isDreambox:
 					self.container.appClosed_conn = self.container.appClosed.connect(self.executeShellEnd)
-					# self.container.dataAvail_conn = self.container.dataAvail.connect(self.dataAvail)
+				else:
+					self.container.appClosed.append(self.executeShellEnd)
 
 				if self.container.execute(config.plugins.epgimport.shell_name.value):
 					self.executeShellEnd(-1)
@@ -1446,6 +1461,7 @@ class AutoStartTimer:
 			if wakeup_day == -1:
 				print("[EPGImport] wakeup day of week disabled")
 				return -1
+
 			if wake_up < now:
 				wake_up += 86400 * wakeup_day
 			else:
