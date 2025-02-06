@@ -834,11 +834,14 @@ class EPGImportSources(Screen):
 			self.container = eConsoleAppContainer()
 			self.run = 0
 			self.finished = False
-			# self.container.appClosed.append(self.after_update)
-			if isDreambox:
+			if hasattr(self.container.appClosed, "connect"):
 				self.container.appClosed_conn = self.container.appClosed.connect(self.after_update)
 			else:
-				self.container.callback.append(self.after_update)
+				self.container.appClosed.append(self.after_update)
+			# if isDreambox:
+				# self.container.appClosed_conn = self.container.appClosed.connect(self.after_update)
+			# else:
+				# self.container.callback.append(self.after_update)
 			if self.container.execute(cmd):
 				print("Command executed successfully")
 			else:

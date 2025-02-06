@@ -5,6 +5,7 @@
 # you can supply a similar interface. See plugin.py and OfflineImport.py for
 # the contract.
 
+from __future__ import print_function
 # from . import log
 
 from Components.config import config
@@ -36,6 +37,12 @@ else:  # python3
 	from urllib.request import build_opener
 
 
+try:
+    from urlparse import urlparse
+except:
+    from urllib.parse import urlparse
+
+
 # Used to check server validity
 HDD_EPG_DAT = '/hdd/epg.dat'
 date_format = "%Y-%m-%d"
@@ -53,12 +60,7 @@ except:
 	sslverify = False
 
 if sslverify:
-	"""
-	try:
-		from urlparse import urlparse
-	except:
-		from urllib.parse import urlparse
-	"""
+
 	class SNIFactory(ssl.ClientContextFactory):
 		def __init__(self, hostname=None):
 			self.hostname = hostname
@@ -300,7 +302,7 @@ class EPGImport:
 			self.closeImport()
 			return
 		self.source = self.sources.pop()
-		print("[EPGImport][nextImport], source =", self.source.description)
+		# print("[EPGImport][nextImport], source =", self.source.description)
 		self.fetchUrl(self.source.url)
 
 	def fetchUrl(self, filename):
@@ -312,15 +314,13 @@ class EPGImport:
 				return
 
 		if filename.startswith('http:') or filename.startswith('https:') or filename.startswith('ftp:'):
-			print("[EPGImport][fetchurl]Attempting to download from: ", filename)
 			self.urlDownload(filename, self.afterDownload, self.downloadFail)
 		else:
-
 			self.afterDownload(None, filename, deleteFile=False)
+		return
 
 	def urlDownload(self, sourcefile, afterDownload, downloadFail):
 		path = bigStorage(9000000, '/media/hdd', *mount_points)
-
 		if not path or not isdir(path):
 			print("[EPGImport] Invalid path, using '/tmp'")
 			path = '/tmp'  # Use fallback /tmp if invalid path, using.
@@ -356,7 +356,7 @@ class EPGImport:
 			if not getsize(filename):
 				raise Exception("[EPGImport][afterDownload] File is empty")
 		except Exception as e:
-			print("[EPGImport][afterDownload] Exception filename 0", filename)
+			# print("[EPGImport][afterDownload] Exception filename 0", filename)
 			self.downloadFail(e)
 			return
 
@@ -413,7 +413,6 @@ class EPGImport:
 		else:
 			filename = random.choice(self.channelFiles)
 			self.channelFiles.remove(filename)
-			print("[EPGImport][afterDownload] File not in list, skipping remove:", filename)
 			self.urlDownload(filename, self.afterChannelDownload, self.channelDownloadFail)
 		return
 
