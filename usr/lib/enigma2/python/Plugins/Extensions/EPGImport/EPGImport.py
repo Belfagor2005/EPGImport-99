@@ -9,8 +9,8 @@
 
 from Components.config import config
 from datetime import datetime
-from os import path as ospath, statvfs, symlink, unlink
-from os.path import exists, getsize, join, split, splitext, isdir
+from os import statvfs, symlink, unlink
+from os.path import exists, getsize, join, split, splitext, isdir, ismount
 from sys import version_info
 from twisted.internet import reactor, ssl, threads
 from twisted.web.client import downloadPage
@@ -21,23 +21,29 @@ import time
 import twisted.python.runtime
 
 
-try:  # python3
-	from http.client import HTTPException
-	from urllib.error import HTTPError, URLError
-	from urllib.parse import urlparse
-	from urllib.request import build_opener
-except:  # python2
-	from httplib import HTTPException
-	from urllib2 import build_opener, HTTPError, URLError
-	from urlparse import urlparse
-
-
 try:
 	pythonVer = version_info.major
 except:
 	pythonVer = 2
 
 
+if pythonVer == 2:
+	from httplib import HTTPException
+	from urllib2 import build_opener, HTTPError, URLError
+else:  # python3
+	from http.client import HTTPException
+	from urllib.error import HTTPError, URLError
+	from urllib.request import build_opener
+
+
+# Used to check server validity
+HDD_EPG_DAT = '/hdd/epg.dat'
+date_format = "%Y-%m-%d"
+now = datetime.now()
+alloweddelta = 2
+CheckFile = "LastUpdate.txt"
+ServerStatusList = {}
+PARSERS = {'xmltv': 'gen_xmltv', 'genxmltv': 'gen_xmltv'}
 sslverify = False
 try:
 	from twisted.internet._sslverify import ClientTLSOptions
@@ -47,10 +53,16 @@ except:
 	sslverify = False
 
 if sslverify:
-
+	"""
+	try:
+		from urlparse import urlparse
+	except:
+		from urllib.parse import urlparse
+	"""
 	class SNIFactory(ssl.ClientContextFactory):
 		def __init__(self, hostname=None):
-			self.hostname = urlparse(hostname).hostname
+			self.hostname = hostname
+			# self.hostname = urlparse(hostname).hostname
 
 		def getContext(self):
 			ctx = self._contextFactory(self.method)
@@ -59,39 +71,28 @@ if sslverify:
 			return ctx
 
 
-# Used to check server validity
-date_format = "%Y-%m-%d"
-now = datetime.now()
-alloweddelta = 2
-CheckFile = "LastUpdate.txt"
-ServerStatusList = {}
-
-
 def getMountPoints():
 	mount_points = []
 	try:
 		from os import access, W_OK
-		with open('/proc/mounts', 'r') as mounts:
-			for line in mounts:
-				parts = line.split()
-				mount_point = parts[1]
-				if ospath.ismount(mount_point) and access(mount_point, W_OK):
-					mount_points.append(mount_point)
+		mounts = open('/proc/mounts', 'rb').readlines()
+		mount_point = [x.split(' ', 2)[1] for x in mounts]
+		if ismount(mount_point) and access(mount_point, W_OK):
+			mount_points.append(mount_point)
 	except Exception as e:
-		print("[EPGImport]Error reading /proc/mounts:", e)
+		print("[EPGImport]Error reading /proc/mounts:", str(e))
 	return mount_points
 
 
-mount_points = getMountPoints()
 mount_point = None
+mount_points = getMountPoints()
 for mp in mount_points:
 	epg_path = join(mp, 'epg.dat')
 	if exists(epg_path):
 		mount_point = epg_path
 		break
 
-HDD_EPG_DAT = '/hdd/epg.dat'
-PARSERS = {'xmltv': 'gen_xmltv', 'genxmltv': 'gen_xmltv'}
+
 if config.misc.epgcache_filename.value:
 	HDD_EPG_DAT = config.misc.epgcache_filename.value
 else:
@@ -136,7 +137,6 @@ def getTimeFromHourAndMinutes(hour, minute):
 		now.tm_yday,     # Day of the year
 		now.tm_isdst     # Daylight saving time (DST)
 	)))
-
 	return begin
 
 
@@ -147,14 +147,13 @@ def bigStorage(minFree, default, *candidates):
 		if (free > minFree) and (free > 50000000):
 			return default
 	except Exception as e:
-		print("[EPGImport][bigStorage] Failed to stat %s:" % default, e)
+		print("[EPGImport][bigStorage] Failed to stat %s:" % default, str(e))
 
-	mountpoints = getMountPoints()
-	"""
+	# mountpoints = getMountPoints()
 	with open('/proc/mounts', 'rb') as f:
 		# format: device mountpoint fstype options #
 		mountpoints = [x.decode().split(' ', 2)[1] for x in f.readlines()]
-	"""
+
 	for candidate in candidates:
 		if candidate in mountpoints:
 			try:
@@ -163,9 +162,9 @@ def bigStorage(minFree, default, *candidates):
 				if free > minFree:
 					return candidate
 			except Exception as e:
-				print("[EPGImport][bigStorage] Failed to stat %s:" % default, e)
+				print("[EPGImport][bigStorage] Failed to stat", str(e))
 				continue
-	raise Exception("[EPGImport][bigStorage] Insufficient storage for download")
+	return default
 
 
 class OudeisImporter:
@@ -184,7 +183,7 @@ class OudeisImporter:
 			except Exception as e:
 				import traceback
 				traceback.print_exc()
-				print("[EPGImport][OudeisImporter][importEvents] ### importEvents exception:", e)
+				print("[EPGImport][OudeisImporter][importEvents] ### importEvents exception:", str(e))
 
 
 def unlink_if_exists(filename):
@@ -216,7 +215,7 @@ class EPGImport:
 		dirname, filename = split(serverurl)
 		if six.PY3:
 			dirname = dirname.decode()
-		FullString = dirname + "/" + CheckFile
+		FullString = dirname + '/' + CheckFile
 		req = build_opener()
 		req.addheaders = [('User-Agent', 'Twisted Client')]
 		dlderror = 0
@@ -226,23 +225,23 @@ class EPGImport:
 		else:
 			# Server not in the list so checking it
 			try:
-				response = req.open(FullString, timeout=5)
+				response = req.open(FullString)
 			except HTTPError as e:
-				print('[EPGImport] HTTPError in checkValidServer= ' + str(e.code))
+				print('[EPGImport][checkValidServer] HTTPError in checkValidServer= ' + str(e.code))
 				dlderror = 1
 			except URLError as e:
-				print('[EPGImport] URLError in checkValidServer= ' + str(e.reason))
+				print('[EPGImport][checkValidServer] URLError in checkValidServer= ' + str(e.reason))
 				dlderror = 1
 			except HTTPException as e:
-				print('[EPGImport] HTTPException in checkValidServer', e)
+				print('[EPGImport][checkValidServer] HTTPException in checkValidServer', str(e))
 				dlderror = 1
 			except Exception:
-				print('[EPGImport] Generic exception in checkValidServer')
+				print('[EPGImport][checkValidServer] Generic exception in checkValidServer')
 				dlderror = 1
 
 		if not dlderror:
+			LastTime = response.read().strip('\n')
 			"""
-			LastTime = response.read()
 			if isinstance(LastTime, bytes):  # Verifica se è un oggetto bytes
 				LastTime = LastTime.decode("utf-8", "ignore").strip('\n')  # Decodifica i bytes in stringa
 			"""
@@ -255,6 +254,8 @@ class EPGImport:
 			except ValueError:
 				print("[EPGImport] checkValidServer wrong date format in file rejecting server %s" % dirname)
 				ServerStatusList[dirname] = 0
+				response.close()
+				return ServerStatusList[dirname]
 
 			delta = (now - FileDate).days
 			if delta <= alloweddelta:
@@ -264,7 +265,8 @@ class EPGImport:
 				# Sorry the delta is higher removing this site
 				print("[EPGImport] checkValidServer rejected server delta days too high: %s" % dirname)
 				ServerStatusList[dirname] = 0
-			response.close()
+				response.close()
+				return ServerStatusList[dirname]
 		else:
 			# We need to exclude this server
 			print("[EPGImport] checkValidServer rejected server download error for: %s" % dirname)
@@ -313,44 +315,17 @@ class EPGImport:
 			print("[EPGImport][fetchurl]Attempting to download from: ", filename)
 			self.urlDownload(filename, self.afterDownload, self.downloadFail)
 		else:
+
 			self.afterDownload(None, filename, deleteFile=False)
 
 	def urlDownload(self, sourcefile, afterDownload, downloadFail):
-		# path = bigStorage(9000000, '/tmp', '/media/DOMExtender', '/media/cf', '/media/mmc', '/media/usb', '/media/hdd')
-		# Check if sourcefile is a list and use the first element
-		if isinstance(sourcefile, list):
-			if len(sourcefile) > 0:
-				sourcefile = sourcefile[0]
-			else:
-				print("[EPGImport][urlDownload] Error: Empty list provided as sourcefile")
-				downloadFail("Empty sourcefile list")
-				return
+		path = bigStorage(9000000, '/media/hdd', *mount_points)
 
-		# Verify that sourcefile is a string
-		# from os import PathLike
-		# if not isinstance(sourcefile, (str, bytes, PathLike)):
-			# print("[EPGImport][urlDownload] Error: sourcefile is not a valid path or URL")
-			# downloadFail("Invalid sourcefile")
-			# return
-		path = bigStorage(9000000, *mount_points)
 		if not path or not isdir(path):
 			print("[EPGImport] Invalid path, using '/tmp'")
 			path = '/tmp'  # Use fallback /tmp if invalid path, using.
 		if "meia" in path:  # mistake ("media != meia)
 			path = path.replace("meia", "media")
-
-		"""
-		check_mount = False
-		if exists("/media/hdd"):
-			with open('/proc/mounts', 'r') as f:
-				for line in f:
-					l = line.split()
-					if len(l) > 1 and l[1] == '/media/hdd':
-						check_mount = True
-		# print("[EPGImport][urlDownload]2 check_mount ", check_mount)
-		pathDefault = "/media/hdd" if check_mount else "/tmp"
-		path = bigStorage(9000000, pathDefault, '/media/usb', '/media/cf')            # lets use HDD and flash as main backup media
-		"""
 		filename = join(path, 'epgimport')
 		ext = splitext(sourcefile)[1]
 		# Keep sensible extension, in particular the compression type
@@ -433,22 +408,18 @@ class EPGImport:
 				print("[EPGImport][afterDownload] warning: Could not remove '%s' intermediate" % filename, e)
 
 		self.channelFiles = self.source.channels.downloadables()
-		# print("[EPGImport][afterDownload] self.source, self.channelFiles", self.source, "   ", self.channelFiles)
 		if not self.channelFiles:
 			self.afterChannelDownload(None, None)
 		else:
 			filename = random.choice(self.channelFiles)
-			if filename in self.channelFiles:
-				self.channelFiles.remove(filename)
+			self.channelFiles.remove(filename)
 			print("[EPGImport][afterDownload] File not in list, skipping remove:", filename)
-			# print("[EPGImport][afterDownload] download Channels ...filename", filename)
 			self.urlDownload(filename, self.afterChannelDownload, self.channelDownloadFail)
 		return
 
 	def downloadFail(self, failure):
 		print("[EPGImport][downloadFail] download failed:", failure)
-		if self.source.url in self.source.urls:
-			self.source.urls.remove(self.source.url)
+		self.source.urls.remove(self.source.url)
 
 		if self.source.urls:
 			print("[EPGImport][downloadFail] Attempting alternative URL")
@@ -490,7 +461,6 @@ class EPGImport:
 			if filename in self.channelFiles:
 				self.channelFiles.remove(filename)
 			print("[EPGImport][channelDownloadFail] File not in list, skipping remove:", filename)
-			print("[EPGImport][channelDownloadFail] retry  alternative download channel - new url filename", filename)
 			self.urlDownload(filename, self.afterChannelDownload, self.channelDownloadFail)
 		else:
 			print("[EPGImport][channelDownloadFail]no more alternatives for channels")
