@@ -1225,8 +1225,8 @@ def main(session, **kwargs):
 	session.openWithCallback(doneConfiguring, EPGImportConfig)
 
 
-# def doneConfiguring(session, retval=False):
-def doneConfiguring(retval=False):
+def doneConfiguring(session, retval=False):
+# def doneConfiguring(retval=False):
 	'''user has closed configuration, check new values....'''
 	if retval is True:
 		if autoStartTimer is not None:
