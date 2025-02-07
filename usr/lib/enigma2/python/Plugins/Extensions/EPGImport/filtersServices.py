@@ -14,7 +14,7 @@ from Screens.Screen import Screen
 from ServiceReference import ServiceReference
 import os
 
-sz_w = getDesktop(0).size().width()
+FHD = True if getDesktop(0).size().width() == 1920 else False
 OFF = 0
 EDIT_BOUQUET = 1
 EDIT_ALTERNATIVES = 2
@@ -115,7 +115,7 @@ filtersServicesList = FiltersList()
 
 
 class filtersServicesSetup(Screen):
-	if sz_w >= 1920:
+	if FHD:
 		skin = """
 		<screen name="filtersServicesSetup" position="center,center" size="1200,820" title="Ignore services list">
 			<ePixmap pixmap="skin_default/buttons/red.png" position="10,5" size="295,70" />
@@ -262,7 +262,7 @@ class filtersServicesSetup(Screen):
 
 
 class filtersServicesSelection(ChannelSelectionBase):
-	if sz_w >= 1920:
+	if FHD:
 		skin = """
 		<screen position="center,center" size="1200,820" title="Channel Selection">
 		<ePixmap pixmap="skin_default/buttons/red.png" position="10,5" size="295,70" />

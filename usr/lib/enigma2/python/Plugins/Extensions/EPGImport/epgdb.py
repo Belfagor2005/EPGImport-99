@@ -27,8 +27,12 @@ class epgdb_class:
 	def __init__(self, provider_name, provider_priority, epgdb_path=None, clear_oldepg=False):
 		self.source_name = provider_name
 		self.priority = provider_priority
+		# get timespan time from system settings defined in days
+		# get outdated time from system settings defined in hours
 		self.epg_outdated = int(config.misc.epgcache_outdated_timespan.value)
+		# subtract the outdated time from current time
 		self.epoch_time = int(time.time()) - (self.epg_outdated * 3600)
+		# limit (timespan) the number of day to import
 		self.epg_timespan = int(config.misc.epgcache_timespan.value)
 		self.epg_cutoff_time = int(time.time()) + (self.epg_timespan * 86400)
 		self.event_counter_journal = 0

@@ -63,11 +63,12 @@ def calcDefaultStarttime():
 def getMountPoints():
 	mount_points = []
 	try:
+		from os import access, W_OK
 		with open('/proc/mounts', 'r') as mounts:
 			for line in mounts:
 				parts = line.split()
 				mount_point = parts[1]
-				if os.path.ismount(mount_point) and os.access(mount_point, os.W_OK):
+				if os.path.ismount(mount_point) and access(mount_point, W_OK):
 					mount_points.append(mount_point)
 	except Exception as e:
 		print("[EPGImport] Error reading /proc/mounts:", e)
@@ -406,7 +407,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		else:
 			self.updateTimer.callback.append(self.updateStatus)
 		self.updateTimer.start(1000)
-		# self.updateStatus()
 		self.onLayoutFinish.append(self.__layoutFinished)
 
 	def changedEntry(self):
@@ -515,6 +515,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 			self.createSetup()
 
 	def keyRed(self):
+
 		def setPrevValues(section, values):
 			for (key, val) in section.content.items.items():
 				value = values.get(key, None)
@@ -838,10 +839,7 @@ class EPGImportSources(Screen):
 				self.container.appClosed_conn = self.container.appClosed.connect(self.after_update)
 			else:
 				self.container.appClosed.append(self.after_update)
-			# if isDreambox:
-				# self.container.appClosed_conn = self.container.appClosed.connect(self.after_update)
-			# else:
-				# self.container.callback.append(self.after_update)
+
 			if self.container.execute(cmd):
 				print("Command executed successfully")
 			else:
@@ -853,12 +851,6 @@ class EPGImportSources(Screen):
 				self.after_update(-1)
 
 			print("Update completed")
-			self.session.open(
-				MessageBox,
-				_("Source files Imported!"),
-				MessageBox.TYPE_INFO,
-				timeout=5
-			)
 
 		else:
 			self.session.open(
@@ -969,7 +961,6 @@ class EPGImportSources(Screen):
 					self.close(False, None, cfg)
 
 	def do_reset(self):
-		log.write("[EPGImport] create empty epg.db")
 		if isDreambox:
 			return
 		from epgdb import epgdb_class
@@ -1643,6 +1634,13 @@ def run_from_epg_menu(menuid, **kwargs):
 		return []
 
 
+def epgmenu(menuid, **kwargs):
+	if menuid == "setup":
+		return [(_("EPGImport"), main, "epgimporter", 1002)]
+	else:
+		return []
+
+
 # we need this helper function to identify the descriptor
 def extensionsmenu(session, **kwargs):
 	main(session, **kwargs)
@@ -1660,16 +1658,9 @@ def setExtensionsmenu(el):
 
 description = _("Automated EPG Importer")
 config.plugins.epgimport.showinextensions.addNotifier(setExtensionsmenu, initial_call=False, immediate_feedback=False)
-extDescriptor = PluginDescriptor(name=_("EPG-Importer now"), description=description, where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=start_import)
-# extDescriptor = PluginDescriptor(name=_("EPG-Importer"), description=description, where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=extensionsmenu)
-pluginlist = PluginDescriptor(name=_("EPG-Importer"), description=description, where=PluginDescriptor.WHERE_PLUGINMENU, icon='plugin.png', fnc=main)
-
-
-def epgmenu(menuid, **kwargs):
-	if menuid == "setup":
-		return [(_("EPG-Importer"), main, "epgimporter", 1002)]
-	else:
-		return []
+extDescriptor = PluginDescriptor(name=_("EPGImport now"), description=description, where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=start_import)
+# extDescriptor = PluginDescriptor(name=_("EPGImport"), description=description, where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=extensionsmenu)
+pluginlist = PluginDescriptor(name=_("EPGImport"), description=description, where=PluginDescriptor.WHERE_PLUGINMENU, icon='plugin.png', fnc=main)
 
 
 def Plugins(**kwargs):

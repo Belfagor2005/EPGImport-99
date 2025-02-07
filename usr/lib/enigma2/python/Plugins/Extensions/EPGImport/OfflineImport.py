@@ -24,12 +24,13 @@ class FakeEnigma:
 
 	def getInstance(self):
 		return self
+	"""
+	def load(self):
+		print("...load...")
 
-	# def load(self):
-		# print("...load...")
-
-	# def importEvents(self, *args):
-		# print(args)
+	def importEvents(self, *args):
+		print(args)
+	"""
 
 
 def importFrom(epgimport, sourceXml):

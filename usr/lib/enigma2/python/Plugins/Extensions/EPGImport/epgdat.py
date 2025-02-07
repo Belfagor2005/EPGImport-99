@@ -1,9 +1,9 @@
+#!/usr/bin/python
 # epgdat.py by Ambrosa http://www.dreamboxonline.com
 # Heavily modified by MiLo http://www.sat4all.com/
 # Lots of stuff removed that i did not need.
 
 from __future__ import absolute_import, print_function
-
 import os
 import struct
 from datetime import datetime
@@ -307,7 +307,7 @@ class epgdat_class:
 			# event MUST BE WRITTEN IN ASCENDING ORDERED using HASH CODE as index
 			for temp in sorted(list(self.EPGDAT_HASH_EVENT_MEMORY_CONTAINER.keys())):
 				pack_2 = self.EPGDAT_HASH_EVENT_MEMORY_CONTAINER[temp]
-				# pack_1=struct.pack(LB_ENDIAN+"II",int(temp,16),pack_2[1])
+				# pack_1 = struct.pack(LB_ENDIAN + "II", int(temp,16), pack_2[1])
 				pack_1 = s_ii.pack(temp, pack_2[1])
 				epgdat_fd.write(pack_1 + pack_2[0])
 			epgdat_fd.close()

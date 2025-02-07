@@ -13,7 +13,7 @@ from datetime import datetime
 from os import statvfs, symlink, unlink
 from os.path import exists, getsize, join, split, splitext, isdir, ismount
 from sys import version_info
-from twisted.internet import reactor, ssl, threads
+from twisted.internet import reactor, threads
 from twisted.web.client import downloadPage
 import gzip
 import random
@@ -37,10 +37,12 @@ else:  # python3
 	from urllib.request import build_opener
 
 
+"""
 try:
-    from urlparse import urlparse
+	from urlparse import urlparse
 except:
-    from urllib.parse import urlparse
+	from urllib.parse import urlparse
+"""
 
 
 # Used to check server validity
@@ -54,7 +56,7 @@ PARSERS = {'xmltv': 'gen_xmltv', 'genxmltv': 'gen_xmltv'}
 sslverify = False
 try:
 	from twisted.internet._sslverify import ClientTLSOptions
-	# from twisted.internet import ssl
+	from twisted.internet import ssl
 	sslverify = True
 except:
 	sslverify = False
@@ -284,7 +286,7 @@ class EPGImport:
 			print('[EPGImport][beginImport] using importEvent(Oudis).')
 			self.storage = OudeisImporter(self.epgcache)
 		else:
-			print("[EPGImport][beginImport] oudeis patch not detected, using using epgdat_importer.epgdatclass/epg.dat instead.")
+			print('[EPGImport][beginImport] oudeis patch not detected, using using epgdat_importer.epgdatclass/epg.dat instead.')
 			from . import epgdat_importer
 			self.storage = epgdat_importer.epgdatclass()
 		self.eventCount = 0
@@ -302,7 +304,6 @@ class EPGImport:
 			self.closeImport()
 			return
 		self.source = self.sources.pop()
-		# print("[EPGImport][nextImport], source =", self.source.description)
 		self.fetchUrl(self.source.url)
 
 	def fetchUrl(self, filename):
@@ -330,13 +331,12 @@ class EPGImport:
 		ext = splitext(sourcefile)[1]
 		# Keep sensible extension, in particular the compression type
 		if ext and len(ext) < 6:
-			# filename += ext
 			filename += ext.decode("utf-8", "ignore") if isinstance(ext, bytes) else ext
 		sourcefile = sourcefile.encode('utf-8')
 		sslcf = SNIFactory(sourcefile) if sourcefile.decode().startswith('https:') else None
 		print("[EPGImport][urlDownload] Downloading: " + sourcefile.decode() + " to local path: " + filename)
-		print("[DEBUG] Type of sourcefile before downloadPage: %s" % type(sourcefile))
-		print("[DEBUG] Type of filename before downloadPage: %s" % type(filename))
+		# print("[DEBUG] Type of sourcefile before downloadPage: %s" % type(sourcefile))
+		# print("[DEBUG] Type of filename before downloadPage: %s" % type(filename))
 		if self.source.nocheck == 1:
 			print("[EPGImport][urlDownload] Not checking the server since nocheck is set for it: " + sourcefile.decode())
 			downloadPage(sourcefile, filename, timeout=90, contextFactory=sslcf).addCallbacks(afterDownload, downloadFail, callbackArgs=(filename, True))
@@ -356,7 +356,6 @@ class EPGImport:
 			if not getsize(filename):
 				raise Exception("[EPGImport][afterDownload] File is empty")
 		except Exception as e:
-			# print("[EPGImport][afterDownload] Exception filename 0", filename)
 			self.downloadFail(e)
 			return
 
@@ -419,7 +418,6 @@ class EPGImport:
 	def downloadFail(self, failure):
 		print("[EPGImport][downloadFail] download failed:", failure)
 		self.source.urls.remove(self.source.url)
-
 		if self.source.urls:
 			print("[EPGImport][downloadFail] Attempting alternative URL")
 			self.source.url = random.choice(self.source.urls)
@@ -496,7 +494,7 @@ class EPGImport:
 			if deleteFile:
 				unlink_if_exists(filename)
 		except Exception as e:
-			print("[EPGImport][readEpgDatFile] Failed to import %s:" % filename, e)
+			print("[EPGImport][readEpgDatFile] Failed to import %s:%s" % (filename, str(e)))
 
 	def fileno(self):
 		if self.fd is not None:
@@ -516,14 +514,14 @@ class EPGImport:
 				try:
 					self.storage.importEvents(r, (d,))
 				except Exception as e:
-					print("[EPGImport][doThreadRead] ### importEvents exception:", e)
+					print("[EPGImport][doThreadRead] ### importEvents exception:", str(e))
 
 		print("[EPGImport][doThreadRead] ### thread is ready ### Events:", self.eventCount)
 		if filename:
 			try:
 				unlink(filename)
 			except Exception as e:
-				print("[EPGImport][doThreadRead] warning: Could not remove '%s' intermediate" % filename, e)
+				print("[EPGImport][doThreadRead] warning: Could not remove '%s' intermediate" % filename, str(e))
 
 		return
 
@@ -540,7 +538,7 @@ class EPGImport:
 						d = d[:4] + ('',) + d[5:]
 					self.storage.importEvents(r, (d,))
 				except Exception as e:
-					print("[EPGImport][doRead] importEvents exception:", e)
+					print("[EPGImport][doRead] importEvents exception:", str(e))
 
 		except StopIteration:
 			self.nextImport()

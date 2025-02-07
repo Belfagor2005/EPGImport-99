@@ -20,6 +20,7 @@ except ImportError:
 # User selection stored here, so it goes into a user settings backup
 SETTINGS_FILE = '/etc/enigma2/epgimport.conf'
 channelCache = {}
+
 global filterCustomChannel
 
 
@@ -170,7 +171,7 @@ class EPGChannel:
 		# and we don't have multiple download from server problem since it is always a local file.
 		if os.path.exists(customFile):
 			print("[EPGImport] Parsing channels from '%s'" % customFile)
-			self.parse(filterCallback, customFile, filterCustomChannel)  # EPGConfig.filterCustomChannel)
+			self.parse(filterCallback, customFile, filterCustomChannel)
 		if downloadedFile is not None:
 			self.mtime = time.time()
 			return self.parse(filterCallback, downloadedFile, True)

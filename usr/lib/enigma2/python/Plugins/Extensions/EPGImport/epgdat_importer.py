@@ -40,9 +40,9 @@ class epgdatclass:
 		self.services = None
 		path = tmppath
 		"""
-		# for mount_point in mount_points:
-			# if '/media' in mount_point:
-				# path = mount_point
+		for mount_point in mount_points:
+			if '/media' in mount_point:
+				path = mount_point
 		"""
 		if self.checkPath('/media/cf'):
 			path = '/media/cf'
