@@ -80,7 +80,7 @@ class FiltersList():
 	def load(self):
 		self.loadFrom('/etc/epgimport/ignore.conf')
 
-	def reload(self):
+	def reload_module(self):
 		self.services = []
 		self.load()
 
@@ -233,7 +233,7 @@ class filtersServicesSetup(Screen):
 	def keyOk(self):
 		self.RefList.save()
 		if self.RefList.services != self.prev_list:
-			self.RefList.reload()
+			self.RefList.reload_module()
 			EPGConfig.channelCache = {}
 		self.close()
 
@@ -297,7 +297,7 @@ class filtersServicesSelection(ChannelSelectionBase):
 		self.providers = providers
 		ChannelSelectionBase.__init__(self, session)
 		self.bouquet_mark_edit = OFF
-		self.setTitle(_("Channel Selection"))
+		self.setTitle(_("Select service to add..."))
 		self["actions"] = ActionMap(["OkCancelActions", "TvRadioActions"], {"cancel": self.close, "ok": self.channelSelected, "keyRadio": self.setModeRadio, "keyTV": self.setModeTv})
 		self.onLayoutFinish.append(self.setModeTv)
 

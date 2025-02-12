@@ -51,6 +51,7 @@ class epgdatclass:
 		for mount_point in mount_points:
 			if '/media' in mount_point:
 				path = mount_point
+				break
 		"""
 		if self.checkPath('/media/cf'):
 			path = '/media/cf'

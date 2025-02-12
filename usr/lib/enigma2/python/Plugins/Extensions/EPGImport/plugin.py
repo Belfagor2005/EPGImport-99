@@ -28,7 +28,6 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools import Notifications
 from Tools.Directories import SCOPE_PLUGINS, fileExists, resolveFilename
 from Tools.FuzzyDate import FuzzyTime
-# from sqlite3 import dbapi2 as sqlite
 import Components.PluginComponent
 import NavigationInstance
 import Screens.Standby
@@ -861,6 +860,32 @@ class EPGImportSources(Screen):
 				timeout=3
 			)
 
+	def after_update(self, retval):
+		print("after_update called with retval:", retval)
+		if retval == 0:
+			print("Update completed successfully.")
+		elif retval == -1:
+			print("Import failed with return code: -1")
+		else:
+			print("Unexpected return value:", retval)
+
+		if self.container:
+			try:
+				self.container.appClosed.remove(self.after_update)
+			except:
+				self.container.appClosed_conn = None
+			self.container.kill()
+
+		self.refresh_tree()
+
+		self.session.open(
+			MessageBox,
+			_("Source files Imported and List Updated!"),
+			MessageBox.TYPE_INFO,
+			timeout=5
+		)
+		self.cfg_imp()
+
 	def refresh_tree(self):
 		print("Refreshing tree...")
 		cfg = EPGConfig.loadUserSettings()
@@ -891,32 +916,6 @@ class EPGImportSources(Screen):
 			self["key_yellow"].hide()
 			self["key_blue"].show()
 		"""
-
-	def after_update(self, retval):
-		print("after_update called with retval:", retval)
-		if retval == 0:
-			print("Update completed successfully.")
-		elif retval == -1:
-			print("Import failed with return code: -1")
-		else:
-			print("Unexpected return value:", retval)
-
-		if self.container:
-			try:
-				self.container.appClosed.remove(self.after_update)
-			except:
-				self.container.appClosed_conn = None
-			self.container.kill()
-
-		self.refresh_tree()
-
-		self.session.open(
-			MessageBox,
-			_("Source files Imported and List Updated!"),
-			MessageBox.TYPE_INFO,
-			timeout=5
-		)
-		self.cfg_imp()
 
 	def cfg_imp(self):
 		self.source_cfg = resolveFilename(SCOPE_PLUGINS, "Extensions/EPGImport/epgimport.conf")
@@ -1192,8 +1191,6 @@ class EPGImportLogx(Screen):
 		self.close(False)
 
 	def clear(self):
-		self.log.logfile.write("")
-		self.log.logfile.truncate()
 		self.close(False)
 
 
