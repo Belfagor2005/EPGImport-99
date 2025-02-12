@@ -33,7 +33,6 @@ import Components.PluginComponent
 import NavigationInstance
 import Screens.Standby
 import os
-import shutil
 import time
 
 global filterCustomChannel
@@ -43,6 +42,11 @@ try:
 	from Tools.StbHardware import getFPWasTimerWakeup
 except:
 	from Tools.DreamboxHardware import getFPWasTimerWakeup
+
+try:
+	basestring
+except NameError:
+	basestring = str
 
 
 def lastMACbyte():
@@ -213,12 +217,12 @@ def getBouquetChannelList():
 										if altrernative_list:
 											for channel in altrernative_list:
 												refnum = getRefNum(channel)
-												if refnum and refnum not in channels:
-													channels.append(refnum)
+												if refnum:
+													channels.add(refnum)
 									else:
 										refnum = getRefNum(service.toString())
-										if refnum and refnum not in channels:
-											channels.append(refnum)
+										if refnum:
+											channels.add(refnum)
 	else:
 		bouquet_rootstr = '1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "userbouquet.favourites.tv" ORDER BY bouquet'
 		bouquet_root = eServiceReference(bouquet_rootstr)
@@ -235,12 +239,12 @@ def getBouquetChannelList():
 						if altrernative_list:
 							for channel in altrernative_list:
 								refnum = getRefNum(channel)
-								if refnum and refnum not in channels:
-									channels.append(refnum)
+								if refnum:
+									channels.add(refnum)
 					else:
 						refnum = getRefNum(service.toString())
-						if refnum and refnum not in channels:
-							channels.append(refnum)
+						if refnum:
+							channels.add(refnum)
 	isFilterRunning = 0
 	return channels
 
@@ -285,8 +289,8 @@ def channelFilter(ref):
 		fakeRecResult = fakeRecService.start(True)
 		NavigationInstance.instance.stopRecordService(fakeRecService)
 		# -7 (errNoSourceFound) occurs when tuner is disconnected.
-		r = fakeRecResult in (0, -7)
-		return r
+		return fakeRecResult in (0, -5, -7)
+		# return r
 	print("Invalid serviceref string:", ref)
 	return False
 
@@ -297,16 +301,13 @@ lastImportResult = None
 
 
 def startImport():
-	if not epgimport.isImportRunning():
-		EPGImport.HDD_EPG_DAT = config.misc.epgcache_filename.value
-		if config.plugins.epgimport.clear_oldepg.value and hasattr(epgimport.epgcache, 'flushEPG'):
-			EPGImport.unlink_if_exists(EPGImport.HDD_EPG_DAT)
-			EPGImport.unlink_if_exists(EPGImport.HDD_EPG_DAT + '.backup')
-			epgimport.epgcache.flushEPG()
-		epgimport.onDone = doneImport
-		epgimport.beginImport(longDescUntil=config.plugins.epgimport.longDescDays.value * 24 * 3600 + time.time())
-	else:
-		print("[startImport] Already running, won't start again")
+	EPGImport.HDD_EPG_DAT = config.misc.epgcache_filename.value
+	if config.plugins.epgimport.clear_oldepg.value and hasattr(epgimport.epgcache, 'flushEPG'):
+		EPGImport.unlink_if_exists(EPGImport.HDD_EPG_DAT)
+		EPGImport.unlink_if_exists(EPGImport.HDD_EPG_DAT + '.backup')
+		epgimport.epgcache.flushEPG()
+	epgimport.onDone = doneImport
+	epgimport.beginImport(longDescUntil=config.plugins.epgimport.longDescDays.value * 24 * 3600 + time.time())
 
 
 ##################################
@@ -399,14 +400,14 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self.prev_onlybouquet = config.plugins.epgimport.import_onlybouquet.value
 		self.initConfig()
 		self.createSetup()
-		self.filterStatusTemplate = _("Filtering: %s\nPlease wait!")
-		self.importStatusTemplate = _("Importing: %s\n%s events")
+		self.filterStatusTemplate = _("Filtering: %s Please wait!")
+		self.importStatusTemplate = _("Importing: %s %s events")
 		self.updateTimer = eTimer()
 		if isDreambox:
 			self.updateTimer_conn = self.updateTimer.timeout.connect(self.updateStatus)
 		else:
 			self.updateTimer.callback.append(self.updateStatus)
-		self.updateTimer.start(1000)
+		self.updateTimer.start(2000)
 		self.onLayoutFinish.append(self.__layoutFinished)
 
 	def changedEntry(self):
@@ -513,6 +514,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		cur = self["config"].getCurrent()
 		if cur in (self.cfg_enabled, self.cfg_shutdown, self.cfg_deepstandby, self.cfg_runboot, self.cfg_loadepg_only, self.cfg_execute_shell):
 			self.createSetup()
+		self.setInfo()
 
 	def keyRed(self):
 
@@ -639,26 +641,19 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		elif epgimport.isImportRunning():
 			src = epgimport.source
 			text = self.importStatusTemplate % (src.description, epgimport.eventCount)
-
 		self["status"].setText(text)
 		if lastImportResult and (lastImportResult != self.lastImportResult):
 			start, count = lastImportResult
 			try:
-				if isinstance(start, str):
-					start = time.mktime(time.strptime(start, "%Y-%m-%d %H:%M:%S"))
-				elif not isinstance(start, (int, float)):
-					raise ValueError("Start value is not a valid timestamp or string")
-
-				# Call FuzzyTime with the correct timestamp
-				d, t = FuzzyTime(int(start), inPast=True)
-			except Exception as e:
-				print("[EPGImport] Errore con FuzzyTime:", e)
+				start = int(start)
+				d, t = FuzzyTime(start, inPast=True)
+			except:
 				try:
 					d, t = FuzzyTime(int(start))
-					print("[EPGImport] Metodo FuzzyTime(int(start)")
-				except Exception as e:
-					print("[EPGImport] Fallback with FuzzyTime also failed:", e)
-					d, t = _("unknown"), _("unknown")
+				except:
+					print("[EPGImport] Error: start is not a valid integer:", start)
+					return
+
 			self["statusbar"].setText(_("Last: %s %s, %d events") % (d, t, count))
 			self.lastImportResult = lastImportResult
 
@@ -772,7 +767,13 @@ class EPGImportSources(Screen):
 		self["key_blue"] = Button(_('Import from Git'))
 		cfg = EPGConfig.loadUserSettings()
 		self.container = None
-		filter = cfg["sources"]
+		if "sources" in cfg:
+			filter = cfg["sources"]
+		else:
+			# Gestisci l'errore o imposta un valore di fallback
+			filter = None
+			print("[EPGImport] Warning: 'sources' key not found in cfg.")
+		# filter = cfg["sources"]
 		tree = []
 		cat = None
 		for x in EPGConfig.enumSources(CONFIG_PATH, filter=None, categories=True):
@@ -822,7 +823,7 @@ class EPGImportSources(Screen):
 		self.session.openWithCallback(
 			self.install_update,
 			MessageBox,
-			_("Do you want to update Source now?"),
+			_("Do you want to update Source now?\n\nWait for the import successful message!"),
 			MessageBox.TYPE_YESNO
 		)
 
@@ -909,14 +910,13 @@ class EPGImportSources(Screen):
 
 		self.refresh_tree()
 
-		self.cfg_imp()
-
 		self.session.open(
 			MessageBox,
 			_("Source files Imported and List Updated!"),
 			MessageBox.TYPE_INFO,
 			timeout=5
 		)
+		self.cfg_imp()
 
 	def cfg_imp(self):
 		self.source_cfg = resolveFilename(SCOPE_PLUGINS, "Extensions/EPGImport/epgimport.conf")
@@ -929,11 +929,11 @@ class EPGImportSources(Screen):
 				return
 		if not os.path.exists(os.path.join(dest_cfg, 'epgimport.conf')):
 			try:
+				import shutil
 				shutil.copy(self.source_cfg, dest_cfg)
 				print("File copied:", self.source_cfg, "->", dest_cfg)
 			except Exception as e:
 				print("Error while copying configuration file:", self.source_cfg, ":", str(e))
-		return
 
 	def save(self):
 		# Make the entries unique through a set
@@ -1070,15 +1070,9 @@ class EPGImportProfile(ConfigListScreen, Screen):
 		self.setTitle(_("Days Profile"))
 
 	def save(self):
-		if not config.plugins.extra_epgimport.day_import[0].value:
-			if not config.plugins.extra_epgimport.day_import[1].value:
-				if not config.plugins.extra_epgimport.day_import[2].value:
-					if not config.plugins.extra_epgimport.day_import[3].value:
-						if not config.plugins.extra_epgimport.day_import[4].value:
-							if not config.plugins.extra_epgimport.day_import[5].value:
-								if not config.plugins.extra_epgimport.day_import[6].value:
-									self.session.open(MessageBox, _("You may not use this settings!\nAt least one day a week should be included!"), MessageBox.TYPE_INFO, timeout=6)
-									return
+		if not any(config.plugins.extra_epgimport.day_import[i].value for i in range(0, 7)):
+			self.session.open(MessageBox, _("You may not use this settings!\nAt least one day a week should be included!"), MessageBox.TYPE_INFO, timeout=6)
+			return
 		ConfigListScreen.keySave(self)
 		"""
 		for x in self["config"].list:
@@ -1226,7 +1220,7 @@ def main(session, **kwargs):
 
 
 def doneConfiguring(session, retval=False):
-# def doneConfiguring(retval=False):
+	# def doneConfiguring(retval=False):
 	'''user has closed configuration, check new values....'''
 	if retval is True:
 		if autoStartTimer is not None:
@@ -1544,7 +1538,7 @@ def WakeupDayOfWeek():
 	except:
 		cur_day = -1
 	if cur_day >= 0:
-		for i in (1, 2, 3, 4, 5, 6, 7):
+		for i in range(1, 8):
 			if config.plugins.extra_epgimport.day_import[(cur_day + i) % 7].value:
 				return i
 	return start_day

@@ -105,6 +105,7 @@ def relImport(name):
 	mod = __import__('.'.join(fullname))
 	for n in fullname[1:]:
 		mod = getattr(mod, n)
+
 	return mod
 
 
@@ -272,7 +273,7 @@ class EPGImport:
 			self.storage = self.epgcache
 		elif hasattr(self.epgcache, 'importEvent'):
 			self.storage = OudeisImporter(self.epgcache)
-			self.saveEPGCache()  # lululla
+			# self.saveEPGCache()  # lululla
 		else:
 			print('[EPGImport][beginImport] oudeis patch not detected, using using epgdat_importer.epgdatclass/epg.dat instead.')
 			from . import epgdat_importer
@@ -284,16 +285,17 @@ class EPGImport:
 		else:
 			self.longDescUntil = longDescUntil
 		self.nextImport()
-		return
 
 	def nextImport(self):
 		self.closeReader()
-		if not self.sources:
+		try:
+			self.source = self.sources.pop()
+		except:
 			self.closeImport()
 			return
-		self.source = self.sources.pop()
-		print("[EPGImport] nextImport, source=", self.source.description, file=log)
-		self.fetchUrl(self.source.url)
+		else:
+			print("[EPGImport][nextImport], source=", self.source.description, file=log)
+			self.fetchUrl(self.source.url)
 
 	def fetchUrl(self, filename):
 		if isinstance(filename, list):
@@ -423,12 +425,13 @@ class EPGImport:
 			self.nextImport()
 
 	def afterChannelDownload(self, result, filename, deleteFile=True):
-		print("[EPGImport][afterChannelDownload] filename", filename, file=log)
+		# print("[EPGImport][afterChannelDownload] filename", filename, file=log)
 		if filename:
 			try:
 				if not getsize(filename):
 					raise Exception("File is empty")
 			except Exception as e:
+				print("[EPGImport][afterChannelDownload] Exception filename", filename)
 				self.channelDownloadFail(e)
 				return
 
@@ -552,7 +555,7 @@ class EPGImport:
 		return
 
 	def closeImport(self):
-		self.closeReader()
+		# self.closeReader()
 		self.iterator = None
 		self.source = None
 		if hasattr(self.storage, 'epgfile'):
