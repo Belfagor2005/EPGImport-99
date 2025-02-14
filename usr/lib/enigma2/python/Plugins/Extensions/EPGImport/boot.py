@@ -32,7 +32,6 @@ for mp in mount_points:
 		mount_point = epg_path
 		break
 
-
 def findEpg():
 	candidates = []
 	for path in MEDIA:
@@ -84,7 +83,7 @@ def findNewEpg():
 	return None
 
 
-epg = '/etc/enigma2/epg.dat'
+epg = '/hdd/epg.dat'
 newepg = findNewEpg()
 
 if config.misc.epgcache_filename.value:

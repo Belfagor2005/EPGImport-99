@@ -1,8 +1,10 @@
+from __future__ import absolute_import
 from __future__ import print_function
-from .filterCustomChannel import get_xml_string, get_xml_rating_string
-from xml.etree.cElementTree import iterparse
+import six
 import calendar
 import time
+from xml.etree.cElementTree import iterparse
+from xml.sax.saxutils import unescape
 
 from . import log
 
@@ -10,43 +12,67 @@ try:
 	basestring
 except NameError:
 	basestring = str
-
-
 # %Y%m%d%H%M%S
+
+
 def quickptime(str):
 	return time.struct_time((int(str[0:4]), int(str[4:6]), int(str[6:8]), int(str[8:10]), int(str[10:12]), 0, -1, -1, 0))
 
 
 def get_time_utc(timestring, fdateparse):
-	"""
-	Converts a timestring with an offset into UTC time.
-	Args:
-		timestring: A string in the format "YYYYMMDDhhmmss +HHMM" or similar.
-		fdateparse: A function to parse the date portion of the timestring.
-	Returns:
-		The UTC time as a Unix timestamp or 0 in case of an error.
-	"""
-	# print("get_time_utc", timestring)
-
+	# print("get_time_utc", timestring, format)
 	try:
 		values = timestring.split(' ')
-		if len(values) < 2:
-			raise ValueError("Invalid timestring format, missing offset")
-
-		# Parsing della data
 		tm = fdateparse(values[0])
 		timegm = calendar.timegm(tm)
-		offset = int(values[1])  # Converte l'offset in un intero
-		timegm -= (3600 * offset // 100)  # Offset in secondi
+		# suppose file says +0300 => that means we have to substract 3 hours from localtime to get gmt
+		timegm -= (3600 * int(values[1]) // 100)
 		return timegm
-
 	except Exception as e:
 		print("[XMLTVConverter] get_time_utc error:", e)
 		return 0
 
-
 # Preferred language should be configurable, but for now,
 # we just like Dutch better!
+
+
+def get_xml_string(elem, name):
+	r = ''
+	try:
+		for node in elem.findall(name):
+			txt = node.text
+			lang = node.get('lang', None)
+			if not r and txt is not None:
+				r = txt
+			elif lang == "nl":
+				r = txt
+	except Exception as e:
+		print("[XMLTVConverter] get_xml_string error:", e)
+	# Now returning UTF-8 by default, the epgdat/oudeis must be adjusted to make this work.
+	# Note that the default xml.sax.saxutils.unescape() function don't unescape
+	# some characters and we have to manually add them to the entities dictionary.
+	r = unescape(r, entities={
+		r"&apos;": r"'",
+		r"&quot;": r'"',
+		r"&#124;": r"|",
+		r"&nbsp;": r" ",
+		r"&#91;": r"[",
+		r"&#93;": r"]",
+	})
+	return six.ensure_str(r)
+
+
+def get_xml_rating_string(elem):
+	r = ''
+	try:
+		for node in elem.findall("rating"):
+			for val in node.findall("value"):
+				txt = val.text.replace("+", "")
+				if not r:
+					r = txt
+	except Exception as e:
+		print("[XMLTVConverter] get_xml_rating_string error:", e)
+	return six.ensure_str(r)
 
 
 def enumerateProgrammes(fp):
@@ -61,6 +87,7 @@ def enumerateProgrammes(fp):
 				elem.clear()
 		except Exception as e:
 			print("[XMLTVConverter] enumerateProgrammes error:", e)
+			break
 
 
 class XMLTVConverter:
@@ -95,16 +122,8 @@ class XMLTVConverter:
 				start = get_time_utc(elem.get('start'), self.dateParser) + self.offset
 				stop = get_time_utc(elem.get('stop'), self.dateParser) + self.offset
 				title = get_xml_string(elem, 'title')
-				# try/except for EPG XML files with program entries containing <sub-title ... />
-				try:
-					subtitle = get_xml_string(elem, 'sub-title')
-				except:
-					subtitle = ''
-				# try/except for EPG XML files with program entries containing <desc ... />
-				try:
-					description = get_xml_string(elem, 'desc')
-				except:
-					description = ''
+				subtitle = get_xml_string(elem, 'sub-title')
+				description = get_xml_string(elem, 'desc')
 				category = get_xml_string(elem, 'category')
 				cat_nr = self.get_category(category, stop - start)
 
@@ -135,5 +154,5 @@ class XMLTVConverter:
 				if duration > 60 * category[1]:
 					return category[0]
 			elif len(category) > 0:
-				return category
+				return category[0]
 		return 0

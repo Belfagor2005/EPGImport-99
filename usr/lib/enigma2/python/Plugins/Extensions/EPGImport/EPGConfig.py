@@ -1,9 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from .filterCustomChannel import filterCustomChannel
-# from . import log
+from __future__ import absolute_import, print_function
+# from .filterCustomChannel import filterCustomChannel
+from . import log, EPGConfig
 
+from six.moves import cPickle as pickle
 from xml.etree.cElementTree import iterparse
 import gzip
 import os
@@ -20,13 +22,6 @@ except ImportError:
 
 PY3 = sys.version_info[0] == 3
 
-
-# from six.moves import cPickle as pickle
-
-try:
-	import cPickle as pickle
-except ImportError:
-	import pickle
 
 # User selection stored here, so it goes into a user settings backup
 SETTINGS_FILE = '/etc/enigma2/epgimport.conf'
@@ -46,7 +41,7 @@ def isLocalFile(filename):
 	return '://' not in filename
 
 
-def getChannels(path, name=None, offset=None):
+def getChannels(path, name, offset):
 	global channelCache
 	if name in channelCache:
 		return channelCache[name]
@@ -157,11 +152,11 @@ def set_channel_id_filter():
 							# We compile indivually every line just to report error
 							full_filter = re.compile(clean_channel_id_line)
 						except re.error:
-							print("[EPGImport] ERROR: " + clean_channel_id_line + " is not a valid regex. It will be ignored.")
+							print("[EPGImport] ERROR: " + clean_channel_id_line + " is not a valid regex. It will be ignored.", file=log)
 						else:
 							full_filter = full_filter + clean_channel_id_line + "|"
 	except IOError:
-		print("[EPGImport]INFO set_channel_id_filter: no channel_id_filter.conf file found.")
+		print("[EPGImport]set_channel_id_filter INFO: no channel_id_filter.conf file found.", file=log)
 		# Return a dummy filter (empty line filter) all accepted except empty channel id
 		compiled_filter = re.compile("^$")
 		return (compiled_filter)
@@ -177,11 +172,11 @@ def set_channel_id_filter():
 		try:
 			compiled_filter = re.compile(full_filter)
 		except re.error:
-			print("[EPGImport]set_channel_id_filter ERROR: final regex " + full_filter + " doesn't compile properly.")
+			print("[EPGImport]set_channel_id_filter ERROR: final regex " + full_filter + " doesn't compile properly.", file=log)
 			# Return a dummy filter  (empty line filter) all accepted except empty channel id
 			compiled_filter = re.compile("^$")
 		else:
-			print("[EPGImport]set_channel_id_filter INFO : final regex " + full_filter + " compiled successfully.")
+			print("[EPGImport]set_channel_id_filter INFO : final regex " + full_filter + " compiled successfully.", file=log)
 
 	return (compiled_filter)
 
@@ -195,7 +190,7 @@ class EPGChannel:
 		self.offset = offset
 
 	def parse(self, filterCallback, downloadedFile, FilterChannelEnabled):
-		print("[EPGImport]EPGChannel Parsing channels from '%s'" % self.name)
+		print("[EPGImport]EPGChannel Parsing channels from '%s'" % self.name, file=log)
 		channel_id_filter = set_channel_id_filter()
 
 		if self.items is None:
@@ -237,15 +232,18 @@ class EPGChannel:
 					elem.clear()
 
 		except Exception as e:
-			print("[EPGImport]parse ERROR:", e)
+			print("[EPGImport] failed to parse", downloadedFile, "Error:", e, file=log)
 
 	def update(self, filterCallback, downloadedFile=None):
-		customFile = '/etc/epgimport/rytec.channels.xml'
+		# customFile = '/etc/epgimport/rytec.channels.xml'
+		customFile = '/etc/epgimport/custom.channels.xml'
 		# Always read custom file since we don't know when it was last updated
 		# and we don't have multiple download from server problem since it is always a local file.
 		if os.path.exists(customFile):
-			print("[EPGImport] Parsing channels from '%s'" % customFile)
-			self.parse(filterCallback, customFile, filterCustomChannel)
+			print("[EPGImport] Parsing channels from '%s'" % customFile, file=log)
+			self.parse(filterCallback, customFile, EPGConfig.filterCustomChannel)
+		else:
+			print("[EPGImport] No customFile for Parsing channels '%s'" % customFile)
 		if downloadedFile is not None:
 			self.mtime = time.time()
 			return self.parse(filterCallback, downloadedFile, True)
@@ -261,8 +259,8 @@ class EPGChannel:
 	def downloadables(self):
 		if not (len(self.urls) == 1 and isLocalFile(self.urls[0])):
 			# Check at most once a day
-			# now = time.time()
-			if (not self.mtime) or (time.time() - self.mtime <= 86400):
+			now = time.time()
+			if (not self.mtime) or (self.mtime + 86400 < now):
 				return self.urls
 		return []
 
@@ -326,16 +324,16 @@ def enumSources(path, filter=None, categories=False):
 					for s in enumSourcesFile(source_path, filter, categories):
 						yield s
 				except Exception as e:
-					print("[EPGImport] Failed to parse file:", source_path, "Error:", e)
+					print("[EPGImport] failed to open", source_path, "Error:", e, file=log)
 	except Exception as e:
-		print("[EPGImport] enumSources failed to list directory:", path, "Error:", e)
+		print("[EPGImport] failed to list", path, "Error:", e, file=log)
 
 
 def loadUserSettings(filename=SETTINGS_FILE):
 	try:
 		return pickle.load(open(filename, 'rb'))
 	except Exception as e:
-		print("[EPGImport]loadUserSettings No settings", e)
+		print("[EPGImport]loadUserSettings No settings", e, file=log)
 		return {"sources": []}
 
 
