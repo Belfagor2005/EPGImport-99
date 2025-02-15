@@ -156,7 +156,7 @@ def set_channel_id_filter():
 						else:
 							full_filter = full_filter + clean_channel_id_line + "|"
 	except IOError:
-		print("[EPGImport]set_channel_id_filter INFO: no channel_id_filter.conf file found.", file=log)
+		print("[EPGImport]set_channel_id_filter: no channel_id_filter.conf file found.", file=log)
 		# Return a dummy filter (empty line filter) all accepted except empty channel id
 		compiled_filter = re.compile("^$")
 		return (compiled_filter)
@@ -210,7 +210,7 @@ class EPGChannel:
 						if filter_result.group():
 							print("[EPGImport]parse INFO: skipping", filter_result.group(), "due to channel_id_filter.conf")
 
-						ref = elem.text or ""  # Avoid NoneType issues
+						ref = elem.text or ""
 						if channel_id and ref and filterCallback(ref):
 							if channel_id in self.items:
 								try:
@@ -221,7 +221,7 @@ class EPGChannel:
 									print("[EPGImport]parse failed to remove from list", self.items[channel_id], "ref", ref, "Error:", e)
 
 					else:
-						ref = elem.text or ""  # Avoid NoneType issues
+						ref = elem.text or ""
 						if channel_id and ref and filterCallback(ref):
 							if channel_id in self.items:
 								self.items[channel_id].append(ref)
@@ -235,7 +235,6 @@ class EPGChannel:
 			print("[EPGImport] failed to parse", downloadedFile, "Error:", e, file=log)
 
 	def update(self, filterCallback, downloadedFile=None):
-		# customFile = '/etc/epgimport/rytec.channels.xml'
 		customFile = '/etc/epgimport/custom.channels.xml'
 		# Always read custom file since we don't know when it was last updated
 		# and we don't have multiple download from server problem since it is always a local file.

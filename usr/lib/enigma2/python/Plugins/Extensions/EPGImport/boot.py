@@ -32,6 +32,7 @@ for mp in mount_points:
 		mount_point = epg_path
 		break
 
+
 def findEpg():
 	candidates = []
 	for path in MEDIA:

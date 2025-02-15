@@ -13,7 +13,7 @@ from Components.ActionMap import ActionMap
 from Components.Button import Button
 from Components.config import config, ConfigEnableDisable, ConfigSubsection, \
 	ConfigYesNo, ConfigClock, getConfigListEntry, ConfigText, ConfigInteger, ConfigDirectory, \
-	ConfigSelection, ConfigNumber, ConfigSubDict, NoSave  # , configfile
+	ConfigSelection, ConfigNumber, ConfigSubDict, NoSave
 from Components.ConfigList import ConfigListScreen
 from Components.Console import Console
 from Components.Label import Label
@@ -499,7 +499,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 				self.list.append(self.cfg_shell_name)
 			if fileExists(resolveFilename(SCOPE_PLUGINS, "Extensions/AutoTimer/plugin.pyo")) or fileExists(resolveFilename(SCOPE_PLUGINS, "Extensions/AutoTimer/plugin.pyc")):
 				try:
-					# from Plugins.Extensions.AutoTimer.AutoTimer import AutoTimer
 					self.list.append(self.cfg_parse_autotimer)
 				except ImportError:
 					print("[EPGImport] AutoTimer plugin not installed correctly", file=log)
@@ -537,7 +536,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		if self.EPG.shutdown.value:
 			self.EPG.standby_afterwakeup.value = False
 			self.EPG.repeat_import.value = 0
-		# self.EPG.save()
 		if self.prev_onlybouquet != config.plugins.epgimport.import_onlybouquet.value or (autoStartTimer is not None and autoStartTimer.prev_multibouquet != config.usage.multibouquet.value):
 			EPGConfig.channelCache = {}
 		self.save()
@@ -1553,6 +1551,7 @@ def autostart(reason, session=None, **kwargs):
 				pass
 	else:
 		log.write("[EPGImport] Stop")
+
 
 def getNextWakeup():
 	"""returns timestamp of next time when autostart should be called"""

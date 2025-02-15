@@ -15,6 +15,7 @@ except ImportError:
 
 
 PY3 = (version_info[0] == 3)
+
 global filterCustomChannel
 
 
