@@ -234,7 +234,6 @@ class EPGImport:
 				print("[EPGImport] checkValidServer wrong date format in file rejecting server %s" % dirname, file=log)
 				ServerStatusList[dirname] = 0
 				response.close()
-				return ServerStatusList[dirname]
 
 			delta = (now - FileDate).days
 			if delta <= alloweddelta:
@@ -342,7 +341,6 @@ class EPGImport:
 		if filename.endswith('.gz'):
 			self.fd = gzip.open(filename, 'rb')
 			try:
-				# read a bit to make sure it's a gzip file
 				self.fd.read(10)
 				self.fd.seek(0, 0)
 			except Exception as e:
@@ -362,7 +360,6 @@ class EPGImport:
 				from backports import lzma
 			self.fd = lzma.open(filename, 'rb')
 			try:
-				# read a bit to make sure it's an xz file
 				self.fd.read(10)
 				self.fd.seek(0, 0)
 			except Exception as e:

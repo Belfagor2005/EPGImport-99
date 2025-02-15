@@ -30,19 +30,17 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools import Notifications
 from Tools.Directories import SCOPE_PLUGINS, fileExists, resolveFilename
 from Tools.FuzzyDate import FuzzyTime
+from Tools.StbHardware import getFPWasTimerWakeup
 import Components.PluginComponent
 import NavigationInstance
 import os
 import Screens.Standby
 import time
+import shutil
+import subprocess
 
 global filterCustomChannel
 
-
-try:
-	from Tools.StbHardware import getFPWasTimerWakeup
-except:
-	from Tools.DreamboxHardware import getFPWasTimerWakeup
 
 try:
 	basestring
@@ -544,7 +542,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		if self["config"].isChanged():
 			for x in self["config"].list:
 				x[1].save()
-			# configfile.save()
 			self.EPG.save()
 			self.session.open(MessageBox, _("Settings saved successfully !"), MessageBox.TYPE_INFO, timeout=5)
 		self.close(True)
@@ -803,7 +800,7 @@ class EPGImportSources(Screen):
 				"red": self.cancel,
 				"green": self.save,
 				"yellow": self.do_import,
-				"blue": self.git_import,         # Blue Button - Import via Git
+				"blue": self.git_import,
 				"save": self.save,
 				"cancel": self.cancel,
 				# "menu": self.do_reset,
@@ -823,30 +820,40 @@ class EPGImportSources(Screen):
 
 	def install_update(self, answer=False):
 		if answer:
-			installer_url = "https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer_source.sh"
-			cmd = "rm -rf /etc/epgimport/*;wget -q --no-check-certificate " + installer_url + " -O - | /bin/bash -x > /tmp/install_debug.log 2>&1"
-			if self.container:
-				del self.container
-			self.container = eConsoleAppContainer()
-			self.run = 0
-			self.finished = False
-			if hasattr(self.container.appClosed, "connect"):
-				self.container.appClosed_conn = self.container.appClosed.connect(self.after_update)
-			else:
-				self.container.appClosed.append(self.after_update)
+			TMPSources = '/var/volatile/tmp/EPGimport-Sources-main'
+			epg_import_dir = '/etc/epgimport'
 
-			if self.container.execute(cmd):
-				print("Command executed successfully")
-			else:
-				print("Command execution failed")
+			try:
+				if not os.path.exists(TMPSources):
+					os.makedirs(TMPSources)  # Funziona in entrambi i casi
+				if not os.path.exists(epg_import_dir):
+					os.makedirs(epg_import_dir)  # Funz
 
-			retval = self.container.execute(cmd)
-			print("Command execution result:", retval)
-			if retval == 0:
-				self.after_update(-1)
+				url = 'https://github.com/Belfagor2005/EPGimport-Sources/archive/refs/heads/main.tar.gz'
+				self.download_file(url, TMPSources)
 
-			print("Update completed")
+				tar_file = os.path.join(TMPSources, 'main.tar.gz')
+				self.extract_tar(tar_file, TMPSources)
 
+				src_dir = os.path.join(TMPSources, 'EPGimport-Sources-main')
+				self.copytree(src_dir, epg_import_dir)
+
+				self.cleanup(TMPSources)
+				self.refresh_tree()
+
+				self.session.open(
+					MessageBox,
+					_("Source files Imported and List Updated!"),
+					MessageBox.TYPE_INFO,
+					timeout=5
+				)
+			except Exception as e:
+				self.session.open(
+					MessageBox,
+					_("Update Failed: %s" % str(e)),
+					MessageBox.TYPE_ERROR,
+					timeout=5
+				)
 		else:
 			self.session.open(
 				MessageBox,
@@ -855,30 +862,50 @@ class EPGImportSources(Screen):
 				timeout=3
 			)
 
-	def after_update(self, retval):
-		print("after_update called with retval:", retval)
-		if retval == 0:
-			print("Update completed successfully.")
-		elif retval == -1:
-			print("Import failed with return code: -1")
-		else:
-			print("Unexpected return value:", retval)
+	def download_file(self, url, destination_dir):
+		try:
+			if hasattr(subprocess, 'run'):  # Python 3.x
+				subprocess.run(['wget', '--no-check-certificate', url, '-P', destination_dir], check=True)
+			else:  # Python 2.x
+				subprocess.call(['wget', '--no-check-certificate', url, '-P', destination_dir])
+		except Exception as e:
+			raise RuntimeError("Error downloading file: %s" % str(e))
 
-		if self.container:
-			try:
-				self.container.appClosed.remove(self.after_update)
-			except:
-				self.container.appClosed_conn = None
-			self.container.kill()
+	def extract_tar(self, tar_file, destination_dir):
+		try:
+			if hasattr(subprocess, 'run'):  # Python 3.x
+				subprocess.run(['tar', '-xzf', tar_file, '-C', destination_dir], check=True)
+			else:
+				subprocess.call(['tar', '-xzf', tar_file, '-C', destination_dir])
+		except Exception as e:
+			raise RuntimeError("Error extracting tar file: %s" % str(e))
 
-		self.refresh_tree()
+	def cleanup(self, TMPSources):
+		try:
+			shutil.rmtree(TMPSources, ignore_errors=True)
+			if hasattr(subprocess, 'run'):  # Python 3.x
+				subprocess.run(['sync'], check=True)
+			else:
+				subprocess.call(['sync'])
+		except Exception as e:
+			raise RuntimeError("Error during cleanup: %s" % str(e))
 
-		self.session.open(
-			MessageBox,
-			_("Source files Imported and List Updated!"),
-			MessageBox.TYPE_INFO,
-			timeout=5
-		)
+	def copytree(self, src, dst):
+		"""Copy files and directories from one directory to another, excluding .bb files (for Python 2 and 3)."""
+		for item in os.listdir(src):
+			s = os.path.join(src, item)
+			d = os.path.join(dst, item)
+			# Skip .bb files
+			if item.endswith('.bb'):
+				print("Skipping .bb file:", item)
+				continue
+
+			if os.path.isdir(s):
+				if not os.path.exists(d):
+					os.makedirs(d)
+				self.copytree(s, d)  # Recursive call
+			else:
+				shutil.copy2(s, d)  # Copy file with metadata
 		# self.cfg_imp()
 
 	def refresh_tree(self):
@@ -928,6 +955,7 @@ class EPGImportSources(Screen):
 				print("File copied:", self.source_cfg, "->", dest_cfg)
 			except Exception as e:
 				print("Error while copying configuration file:", self.source_cfg, ":", str(e))
+		return
 
 	def save(self):
 		# Make the entries unique through a set
