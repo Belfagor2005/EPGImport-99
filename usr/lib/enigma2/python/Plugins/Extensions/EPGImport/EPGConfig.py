@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import, print_function
-# from .filterCustomChannel import filterCustomChannel
-from . import log, EPGConfig
+from .filterCustomChannel import filterCustomChannel
+from . import log
 
 from six.moves import cPickle as pickle
 from xml.etree.cElementTree import iterparse
@@ -239,10 +239,11 @@ class EPGChannel:
 		# Always read custom file since we don't know when it was last updated
 		# and we don't have multiple download from server problem since it is always a local file.
 		if os.path.exists(customFile):
-			print("[EPGImport] Parsing channels from '%s'" % customFile, file=log)
-			self.parse(filterCallback, customFile, EPGConfig.filterCustomChannel)
+			print("[EPGImport] Parsing channels from '%s'" % customFile)
+			self.parse(filterCallback, customFile, filterCustomChannel)
 		else:
-			print("[EPGImport] No customFile for Parsing channels '%s'" % customFile)
+			customFile = '/etc/epgimport/rytec.channels.xml'
+			print("[EPGImport] No customFile for Parsing channels: use rytec.channels.xml '%s'" % customFile)
 		if downloadedFile is not None:
 			self.mtime = time.time()
 			return self.parse(filterCallback, downloadedFile, True)
