@@ -1,6 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
-#
 # To test this script on something that is not a Dreambox, such as a Windows PC
 # just run it with Python. You'll need Python's "twisted" library.
 # Supply the test .xml files on the command line, and the input files
@@ -21,13 +19,10 @@ EPGImport.HDD_EPG_DAT = "./epg.dat.new"
 
 
 class FakeEnigma:
-
 	def getInstance(self):
 		return self
-
 	# def load(self):
 		# print("...load...")
-
 	# def importEvents(self, *args):
 		# print(args)
 

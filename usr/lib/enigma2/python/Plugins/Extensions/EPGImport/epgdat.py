@@ -1,5 +1,4 @@
-#!/usr/bin/python
-# epgdat.py by Ambrosa http://www.dreamboxonline.com
+# epgdat.py  by Ambrosa http://www.dreamboxonline.com
 # Heavily modified by MiLo http://www.sat4all.com/
 # Lots of stuff removed that i did not need.
 
@@ -18,12 +17,10 @@ try:
 	print("[EPGImport] using C module, yay")
 except ImportError:
 	print("[EPGImport] failed to load C implementation, sorry")
-	"""
-	this table is used by CRC32 routine below (used by Dreambox for
-	computing REF DESC value).
-	The original DM routine is a modified CRC32 standard routine,
-	so cannot use Python standard binascii.crc32()
-	"""
+	# this table is used by CRC32 routine below (used by Dreambox for
+	# computing REF DESC value).
+	# The original DM routine is a modified CRC32 standard routine,
+	# so cannot use Python standard binascii.crc32()
 	CRCTABLE = (
 		0x00000000, 0x04C11DB7, 0x09823B6E, 0x0D4326D9,
 		0x130476DC, 0x17C56B6B, 0x1A864DB2, 0x1E475005,
@@ -90,36 +87,29 @@ except ImportError:
 		0xAFB010B1, 0xAB710D06, 0xA6322BDF, 0xA2F33668,
 		0xBCB4666D, 0xB8757BDA, 0xB5365D03, 0xB1F740B4
 	)
-	"""
-	CRC32 in Dreambox/DVB way (see CRCTABLE comment above)
-	"crcdata" is the description string
-	"crctype" is the description type (1 byte 0x4d or 0x4e)
-	!!!!!!!!! IT'S VERY TIME CONSUMING !!!!!!!!!
-	"""
+	# CRC32 in Dreambox/DVB way (see CRCTABLE comment above)
+	# "crcdata" is the description string
+	# "crctype" is the description type (1 byte 0x4d or 0x4e)
+	# !!!!!!!!! IT'S VERY TIME CONSUMING !!!!!!!!!
 
 	def crc32_dreambox(crcdata, crctype, crctable=CRCTABLE):
-		"""
-		ML Optimized: local CRCTABLE (locals are faster), remove self, remove code that has no effect, faster loop
-		crc=0x00000000
-		crc=((crc << 8 ) & 0xffffff00) ^ crctable[((crc >> 24) ^ crctype) & 0x000000ff]
-		"""
+		# ML Optimized: local CRCTABLE (locals are faster), remove self, remove code that has no effect, faster loop
+		# crc=0x00000000
+		# crc=((crc << 8 ) & 0xffffff00) ^ crctable[((crc >> 24) ^ crctype) & 0x000000ff]
 		crc = crctable[crctype & 0x000000ff]
 		crc = ((crc << 8) & 0xffffff00) ^ crctable[((crc >> 24) ^ len(crcdata)) & 0x000000ff]
 		for d in crcdata:
 			crc = ((crc << 8) & 0xffffff00) ^ crctable[((crc >> 24) ^ ord(d)) & 0x000000ff]
 		return crc
 
-
 # convert time or length from datetime format to 3 bytes hex value
 # i.e. 20:25:30 -> 0x20 , 0x25 , 0x30
 
 
 def TL_hexconv(dt):
-	return (
-		(dt.hour // 10) * 16 + (dt.hour % 10),  # Cifra decina e cifra unità per le ore
-		(dt.minute // 10) * 16 + (dt.minute % 10),  # Cifra decina e cifra unità per i minuti
-		(dt.second // 10) * 16 + (dt.second % 10)  # Cifra decina e cifra unità per i secondi
-	)
+	return ((dt.hour % 10) + (16 * (dt.hour // 10)),
+			(dt.minute % 10) + (16 * (dt.minute // 10)),
+			(dt.second % 10) + (16 * (dt.second // 10)))
 
 
 class epgdat_class:
@@ -169,7 +159,6 @@ class epgdat_class:
 		self.s_I = struct.Struct(self.LB_ENDIAN + "I")
 		self.s_II = struct.Struct(self.LB_ENDIAN + "II")
 		self.s_IIII = struct.Struct(self.LB_ENDIAN + "IIII")
-		self.s_B3sBBB = struct.Struct("B3sBBB")
 		self.s_B3sHBB = struct.Struct("B3sHBB")
 		self.s_3sBB = struct.Struct("3sBB")
 
@@ -213,16 +202,9 @@ class epgdat_class:
 			# prepare and write CHANNEL INFO record
 			ssid = service.split(":")
 			# write CHANNEL INFO record (sid, onid, tsid, eventcount)
-			if len(ssid) < 6:
-				continue
-
-			sid = int(ssid[3], 16)
-			onid = int(ssid[5], 16)
-			tsid = int(ssid[4], 16)
-			event_count = len(self.events)
-
-			# write CHANNEL INFO record
-			self.EPG_TMP_FD.write(self.s_IIII.pack(sid, onid, tsid, event_count))
+			self.EPG_TMP_FD.write(self.s_IIII.pack(
+				int(ssid[3], 16), int(ssid[5], 16),
+				int(ssid[4], 16), len(self.events)))
 			self.EPG_HEADER1_channel_count += 1
 			# event_dict.keys() are numeric so indexing is possibile
 			# key is the same thing as counter and is more simple to manage last-1 item
@@ -313,7 +295,7 @@ class epgdat_class:
 			# event MUST BE WRITTEN IN ASCENDING ORDERED using HASH CODE as index
 			for temp in sorted(list(self.EPGDAT_HASH_EVENT_MEMORY_CONTAINER.keys())):
 				pack_2 = self.EPGDAT_HASH_EVENT_MEMORY_CONTAINER[temp]
-				# pack_1 = struct.pack(LB_ENDIAN + "II", int(temp,16), pack_2[1])
+				# pack_1=struct.pack(LB_ENDIAN+"II",int(temp,16),pack_2[1])
 				pack_1 = s_ii.pack(temp, pack_2[1])
 				epgdat_fd.write(pack_1 + pack_2[0])
 			epgdat_fd.close()

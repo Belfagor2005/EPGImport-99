@@ -1,15 +1,12 @@
 from __future__ import absolute_import
 from __future__ import print_function
-
-from . import log
-
-from xml.etree.cElementTree import iterparse
-from xml.sax.saxutils import unescape
-
 import six
 import calendar
 import time
+from xml.etree.cElementTree import iterparse
+from xml.sax.saxutils import unescape
 
+from . import log
 
 try:
 	basestring
@@ -23,27 +20,17 @@ def quickptime(str):
 
 
 def get_time_utc(timestring, fdateparse):
-	"""
-	Converts a timestring with an offset into UTC time.
-	Args:
-		timestring: A string in the format "YYYYMMDDhhmmss +HHMM" or similar.
-		fdateparse: A function to parse the date portion of the timestring.
-	Returns:
-		The UTC time as a Unix timestamp or 0 in case of an error.
-	"""
-
+	# print("get_time_utc", timestring, format)
 	try:
 		values = timestring.split(' ')
-		if len(values) < 2:
-			raise ValueError("Invalid timestring format, missing offset")
 		tm = fdateparse(values[0])
 		timegm = calendar.timegm(tm)
+		# suppose file says +0300 => that means we have to substract 3 hours from localtime to get gmt
 		timegm -= (3600 * int(values[1]) // 100)
 		return timegm
 	except Exception as e:
 		print("[XMLTVConverter] get_time_utc error:", e)
 		return 0
-
 
 # Preferred language should be configurable, but for now,
 # we just like Dutch better!
