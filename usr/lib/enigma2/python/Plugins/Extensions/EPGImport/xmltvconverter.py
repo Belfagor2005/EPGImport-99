@@ -1,10 +1,11 @@
 from __future__ import absolute_import
 from __future__ import print_function
+
+from xml.etree.cElementTree import iterparse
+from xml.sax.saxutils import unescape
 import six
 import calendar
 import time
-from xml.etree.cElementTree import iterparse
-from xml.sax.saxutils import unescape
 
 from . import log
 
@@ -87,7 +88,6 @@ def enumerateProgrammes(fp):
 				elem.clear()
 		except Exception as e:
 			print("[XMLTVConverter] enumerateProgrammes error:", e)
-			break
 
 
 class XMLTVConverter:

@@ -1,5 +1,4 @@
 from __future__ import absolute_import, print_function
-from . import log, EPGConfig
 from xml.etree.cElementTree import iterparse
 import gzip
 import os
@@ -7,10 +6,10 @@ import random
 import re
 import time
 
-
+from . import log, EPGConfig
 try:  # python2
 	import cPickle as pickle
-except:  # python3
+except:	 # python3
 	import pickle
 
 # User selection stored here, so it goes into a user settings backup
@@ -81,7 +80,7 @@ def set_channel_id_filter():
 			compiled_filter = re.compile(full_filter)
 		except re.error:
 			print("[EPGImport] ERROR: final regex " + full_filter + " doesn't compile properly.", file=log)
-			# Return a dummy filter  (empty line filter) all accepted except empty channel id
+			# Return a dummy filter	 (empty line filter) all accepted except empty channel id
 			compiled_filter = re.compile("^$")
 		else:
 			print("[EPGImport] INFO : final regex " + full_filter + " compiled successfully.", file=log)
@@ -164,10 +163,11 @@ class EPGChannel:
 
 	def update(self, filterCallback, downloadedFile=None):
 		customFile = '/etc/epgimport/custom.channels.xml'
-		if not os.path.exists(customFile):
-			customFile = '/etc/epgimport/rytec.channels.xml'
 		# Always read custom file since we don't know when it was last updated
 		# and we don't have multiple download from server problem since it is always a local file.
+		if not os.path.exists(customFile):
+			customFile = '/etc/epgimport/rytec.channels.xml'			
+
 		if os.path.exists(customFile):
 			print("[EPGImport] Parsing channels from '%s'" % customFile, file=log)
 			self.parse(filterCallback, customFile, EPGConfig.filterCustomChannel)
