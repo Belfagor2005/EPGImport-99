@@ -98,7 +98,7 @@ config.plugins.epgimport.deepstandby = ConfigSelection(default="skip", choices=[
 	("wakeup", _("wake up and import")),
 	("skip", _("skip the import"))
 ])
-config.plugins.epgimport.loadepg_only = ConfigSelection(default="default", choices=[
+config.plugins.epgimport.loadepg_only = ConfigSelection(default="all", choices=[
 	("default", _("checking service reference(default)")),
 	("iptv", _("only IPTV channels")),
 	("all", _("all channels"))
