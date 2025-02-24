@@ -103,6 +103,7 @@ mkdir -p '/etc/epgimport'
 cd $TMPSources
 wget --no-check-certificate 'https://github.com/Belfagor2005/EPGimport-Sources/archive/refs/heads/main.tar.gz'
 tar -xzf main.tar.gz
+find "$TMPSources/EPGimport-Sources-main" -type f -name "*.bb" -delete
 cp -r $TMPSources/EPGimport-Sources-main/* '/etc/epgimport'
 set +e
 cd
