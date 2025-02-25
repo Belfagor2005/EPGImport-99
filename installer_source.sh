@@ -1,4 +1,6 @@
 #!/bin/bash
+set -x
+exec 2>/tmp/script_debug.log
 
 ## setup source command=wget -q --no-check-certificate https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer_source.sh -O - | /bin/bash
 
