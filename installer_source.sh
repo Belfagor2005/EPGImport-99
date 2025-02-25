@@ -42,7 +42,7 @@ fi
 if [ -f /usr/bin/wget ]; then
     echo "wget exist"
 else
-	if [ $OSTYPE = "DreamOs" ]; then
+	if [ "$OSTYPE" = "DreamOs" ]; then
 		echo "dreamos"
 		apt-get update && apt-get install wget
 	else
@@ -51,7 +51,7 @@ else
 fi
 
 
-if [ $PYTHON = "PY3" ]; then
+if [ "$PYTHON" = "PY3" ]; then
 	if grep -qs "Package: $Packagesix" "$STATUS" ; then
 		echo ""
 	else
@@ -64,12 +64,12 @@ if grep -qs "Package: $Packagerequests" "$STATUS" ; then
 else
 	echo "Need to install $Packagerequests"
 	echo ""
-	if [ $OSTYPE = "DreamOs" ]; then
+	if [ "$OSTYPE" = "DreamOs" ]; then
 		apt-get update && apt-get install python-requests -y
 	 
-	elif [ $PYTHON = "PY3" ]; then
+	elif [ "$PYTHON" = "PY3" ]; then
 		opkg update && opkg --force-reinstall --force-overwrite install python3-requests
-	elif [ $PYTHON = "PY2" ]; then
+	elif [ "$PYTHON" = "PY2" ]; then
 	  
 		opkg update && opkg --force-reinstall --force-overwrite install python-requests
 	
@@ -79,7 +79,7 @@ echo ""
 
 
 set -e
-if [ $OSTYPE = "DreamOs" ]; then
+if [ "$OSTYPE" = "DreamOs" ]; then
    echo "# Your image is OE2.5/2.6 #"
    echo ""
 else
