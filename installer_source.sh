@@ -1,16 +1,13 @@
 #!/bin/bash
-set -x
-exec 2>/tmp/script_debug.log
+
+exec 2 > /tmp/script_debug.log
 
 ## setup source command=wget -q --no-check-certificate https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer_source.sh -O - | /bin/bash
 
-
 ## Only This 2 lines to edit with new version ######
-version='1'
+version="1"
 changelog="\n--Update Source xml EPGImport"
 
-
-##############################################################
 
 TMPSources=/var/volatile/tmp/EPGimport-Sources-main
 
@@ -44,7 +41,7 @@ fi
 if [ -f /usr/bin/wget ]; then
     echo "wget exist"
 else
-	if [ "$OSTYPE" = "DreamOs" ]; then
+	if [ $OSTYPE = "DreamOs" ]; then
 		echo "dreamos"
 		apt-get update && apt-get install wget
 	else
@@ -53,44 +50,16 @@ else
 fi
 
 
-if [ "$PYTHON" = "PY3" ]; then
-	if grep -qs "Package: $Packagesix" "$STATUS" ; then
-		echo ""
-	else
-		opkg update && opkg --force-reinstall --force-overwrite install python3-six
-	fi
-fi
-echo ""
-if grep -qs "Package: $Packagerequests" "$STATUS" ; then
-	echo ""
-else
-	echo "Need to install $Packagerequests"
-	echo ""
-	if [ "$OSTYPE" = "DreamOs" ]; then
-		apt-get update && apt-get install python-requests -y
-	 
-	elif [ "$PYTHON" = "PY3" ]; then
-		opkg update && opkg --force-reinstall --force-overwrite install python3-requests
-	elif [ "$PYTHON" = "PY2" ]; then
-	  
-		opkg update && opkg --force-reinstall --force-overwrite install python-requests
-	
-	fi
-fi
-echo ""
+# if [ $OSTYPE = "DreamOs" ]; then
+   # echo "# Your image is OE2.5/2.6 #"
+   # echo ""
+# else
+   # echo "# Your image is OE2.0 #"
+   # echo ""
+# fi
 
-
-set -e
-if [ "$OSTYPE" = "DreamOs" ]; then
-   echo "# Your image is OE2.5/2.6 #"
-   echo ""
-else
-   echo "# Your image is OE2.0 #"
-   echo ""
-fi
-
-sleep 2
-
+echo PLUGINPATH = $PLUGINPATH
+ls -ld $PLUGINPATH
 
 ## Check if plugin installed correctly
 if [ ! -d $PLUGINPATH ]; then
@@ -104,11 +73,11 @@ fi
 mkdir -p $TMPSources
 mkdir -p '/etc/epgimport'
 cd $TMPSources
-wget --no-check-certificate 'https://github.com/Belfagor2005/EPGimport-Sources/archive/refs/heads/main.tar.gz'
+wget --no-check-certificate "https://github.com/Belfagor2005/EPGimport-Sources/archive/refs/heads/main.tar.gz"
 tar -xzf main.tar.gz
 find "$TMPSources/EPGimport-Sources-main" -type f -name "*.bb" -delete
 cp -r $TMPSources/EPGimport-Sources-main/* '/etc/epgimport'
-set +e
+# set +e
 cd
 sleep 2
 
