@@ -52,14 +52,14 @@ fi
 
 
 if [ $PYTHON = "PY3" ]; then
-	if grep -qs "Package: $Packagesix" cat $STATUS ; then
+	if grep -qs "Package: $Packagesix" "$STATUS" ; then
 		echo ""
 	else
 		opkg update && opkg --force-reinstall --force-overwrite install python3-six
 	fi
 fi
 echo ""
-if grep -qs "Package: $Packagerequests" cat $STATUS ; then
+if grep -qs "Package: $Packagerequests" "$STATUS" ; then
 	echo ""
 else
 	echo "Need to install $Packagerequests"
