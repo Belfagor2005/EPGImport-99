@@ -5,7 +5,8 @@
 
 ## Only This 2 lines to edit with new version ######
 version='1'
-changelog='\n--Update Source xml EPGImport'
+changelog="\n--Update Source xml EPGImport"
+
 
 ##############################################################
 
