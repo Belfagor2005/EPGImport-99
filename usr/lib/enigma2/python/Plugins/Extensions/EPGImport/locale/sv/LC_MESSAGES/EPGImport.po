@@ -1,157 +1,161 @@
-# Finnish translations for plugins package.
-# Copyright (C) 2015 THE plugins'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the plugins package.
-# Automatically generated, 2015.
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
+#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: plugins 0.0.1\n"
+"Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-02-26 14:49+0100\n"
-"PO-Revision-Date: 2025-02-26 14:49+0100\n"
-"Last-Translator: Samzam <http://www.world-of-satellite.com>\n"
-"Language-Team: none\n"
-"Language: fi\n"
+"POT-Creation-Date: 2025-02-26 14:59+0100\n"
+"PO-Revision-Date: 2025-02-26 14:59+0100\n"
+"Last-Translator: Warder <ciksa@seznam.cz>\n"
+"Language-Team: \n"
+"Language: sv_FI\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.4.4\n"
 "X-Poedit-Basepath: ../../..\n"
 "X-Poedit-SearchPath-0: .\n"
 
 #: filtersServices.py:151
 msgid "Add Provider"
-msgstr ""
+msgstr "Pridať poskytovateľa"
 
 #: filtersServices.py:152
 msgid "Add Channel"
-msgstr ""
+msgstr "Pridať kanál"
 
 #: filtersServices.py:154
 msgid "press OK to save list"
-msgstr ""
+msgstr "stlačením tlačidla OK uložte zoznam"
 
 #: filtersServices.py:173 plugin.py:703
 msgid "Ignore services list"
-msgstr ""
+msgstr "Ignorovať zoznam služieb"
 
 #: filtersServices.py:202
 msgid "Really delete all list?"
-msgstr ""
+msgstr "Naozaj odstrániť celý zoznam?"
 
 #: filtersServices.py:235
 msgid "Delete selected"
-msgstr ""
+msgstr "Vymazať vybrané"
 
 #: filtersServices.py:236
 msgid "Delete all"
-msgstr ""
+msgstr "Zmazať všetko"
 
 #: filtersServices.py:261
 msgid "Select service to add..."
-msgstr ""
+msgstr "Vyberte položku Služba, ktorá sa má pridať..."
 
 #: filtersServices.py:269
 msgid "All services provider"
-msgstr ""
+msgstr "Všetci poskytovatelia služieb"
 
 #: filtersServices.py:288 plugin.py:704
 msgid "Select action"
-msgstr ""
+msgstr "Vybrať akciu"
 
 #: plugin.py:101
 msgid "always"
-msgstr "aina"
+msgstr "vždy"
 
 #: plugin.py:102
 msgid "only manual boot"
-msgstr "vain manuaalisessa uudelleenkäynnistyksessä"
+msgstr "iba manuálne spustenie"
 
 #: plugin.py:103
 msgid "only automatic boot"
-msgstr "vain automaattisessa uudelleenkäynnistyksessä"
+msgstr "iba automatické spustenie"
 
 #: plugin.py:104
 msgid "never"
-msgstr "ei koskaan"
+msgstr "nikdy"
 
 #: plugin.py:114
 msgid "wake up and import"
-msgstr "herätä ja lataa"
+msgstr "prebudenie a import"
 
 #: plugin.py:115
 msgid "skip the import"
-msgstr "ohita lataus"
+msgstr "preskočiť import"
 
 #: plugin.py:121
 msgid "checking service reference(default)"
 msgstr ""
 
 #: plugin.py:122
+#, fuzzy
+#| msgid "Load EPG only for IPTV channels"
 msgid "only IPTV channels"
-msgstr ""
+msgstr "Načítajte EPG iba pre kanály IPTV"
 
 #: plugin.py:123
+#, fuzzy
+#| msgid "Add Channel"
 msgid "all channels"
-msgstr ""
+msgstr "Pridať kanál"
 
 #: plugin.py:139
 msgid "Press OK"
-msgstr "Paina OK"
+msgstr "Stlač OK"
 
 #: plugin.py:148
 msgid "Monday"
-msgstr "Maanantai"
+msgstr "Pondelok"
 
 #: plugin.py:149
 msgid "Tuesday"
-msgstr "Tiistai"
+msgstr "Utorok"
 
 #: plugin.py:150
 msgid "Wednesday"
-msgstr "Keskiviikko"
+msgstr "Streda"
 
 #: plugin.py:151
 msgid "Thursday"
-msgstr "Torstai"
+msgstr "Štvrtok"
 
 #: plugin.py:152
 msgid "Friday"
-msgstr "Perjantai"
+msgstr "Piatok"
 
 #: plugin.py:153
 msgid "Saturday"
-msgstr "Lauantai"
+msgstr "Sobota"
 
 #: plugin.py:154
 msgid "Sunday"
-msgstr "Sunnuntai"
+msgstr "Nedeľa"
 
 #: plugin.py:357
 msgid "EPG Import Configuration"
-msgstr "Asetukset"
+msgstr "Konfigurácia importu EPG"
 
 #: plugin.py:360 plugin.py:653
 #, python-format
 msgid "Last import: %s events"
-msgstr "Viimeisin lataus: %s tapahtumaa"
+msgstr "Posledný import: %s udalosti"
 
 #: plugin.py:361 plugin.py:751 plugin.py:995
 msgid "Cancel"
-msgstr "Poistu"
+msgstr "Zrušiť"
 
 #: plugin.py:362 plugin.py:752 plugin.py:996 plugin.py:1072
 msgid "Save"
-msgstr "Tallenna"
+msgstr "Uložiť"
 
 #: plugin.py:363
 msgid "Manual"
-msgstr "Lataa nyt"
+msgstr "Manuálna"
 
 #: plugin.py:364
 msgid "Sources"
-msgstr "Lähteet"
+msgstr "Zdrojov"
 
 #: plugin.py:397
 #, python-format
@@ -169,12 +173,12 @@ msgid ""
 "Importing:\n"
 "%s %s events"
 msgstr ""
-"Lataa: %s\n"
-"%s events"
+"Import: %s\n"
+"%s podujatia"
 
 #: plugin.py:438
 msgid "Automatic import EPG"
-msgstr "Automaattinen EPG lataus"
+msgstr "Automatický import EPG"
 
 #: plugin.py:438
 msgid ""
@@ -188,7 +192,7 @@ msgstr ""
 
 #: plugin.py:440
 msgid "Automatic start time"
-msgstr "Aloitusaika"
+msgstr "Čas automatického spustenia"
 
 #: plugin.py:440
 msgid "Specify the time for the automatic EPG update."
@@ -196,7 +200,7 @@ msgstr ""
 
 #: plugin.py:441
 msgid "When in deep standby"
-msgstr "Virransäästötilassa lataus"
+msgstr "V hlbokom pohotovostnom režime"
 
 #: plugin.py:441
 msgid ""
@@ -206,7 +210,7 @@ msgstr ""
 
 #: plugin.py:442
 msgid "Return to deep standby after import"
-msgstr "Palaa virransäästötilaan latauksen jälkeen"
+msgstr "Po importe sa vráťte do hlbokého pohotovostného režimu"
 
 #: plugin.py:442
 msgid ""
@@ -216,7 +220,7 @@ msgstr ""
 
 #: plugin.py:443
 msgid "Standby at startup"
-msgstr "Valmiustilassa lataus"
+msgstr "Pohotovostný režim pri spustení"
 
 #: plugin.py:443
 msgid ""
@@ -226,7 +230,7 @@ msgstr ""
 
 #: plugin.py:444
 msgid "Choice days for start import"
-msgstr "Valitse latauspäivät"
+msgstr "Výberové dni pre spustenie importu"
 
 #: plugin.py:444
 msgid "You can select the day(s) when the EPG update must be performed."
@@ -234,7 +238,7 @@ msgstr ""
 
 #: plugin.py:445
 msgid "Start import after booting up"
-msgstr "Lataa uudelleenkäynnistyksen jälkeen"
+msgstr "Spustenie importu po spustení"
 
 #: plugin.py:445
 msgid ""
@@ -244,7 +248,7 @@ msgstr ""
 
 #: plugin.py:446
 msgid "Load EPG only services in bouquets"
-msgstr "Lataa EPG vain suosikkilistojen kanaville"
+msgstr "Načítajte služby EPG iba v kyticiach"
 
 #: plugin.py:446
 msgid ""
@@ -262,7 +266,7 @@ msgstr ""
 
 #: plugin.py:448
 msgid "Consider setting \"Days Profile\""
-msgstr "Harkitse asetusta \"Valitse päivät\""
+msgstr "Zvážte nastavenie \"Profilu dní\""
 
 #: plugin.py:448
 msgid ""
@@ -272,7 +276,7 @@ msgstr ""
 
 #: plugin.py:449
 msgid "Skip import on restart GUI"
-msgstr "Ohita lataus uudelleenkäynnistyksessä"
+msgstr "Preskočiť import pri reštartovaní grafického používateľského rozhrania"
 
 #: plugin.py:449
 msgid ""
@@ -283,7 +287,7 @@ msgstr ""
 #, fuzzy
 #| msgid "Show \"EPGImport\" in extensions"
 msgid "Show \"EPG import now\" in extensions"
-msgstr "Näytä \"EPG:n lataus\" laajennusvalikossa"
+msgstr "Zobraziť \"EPGImport\" v rozšíreniach"
 
 #: plugin.py:450
 msgid ""
@@ -293,9 +297,9 @@ msgstr ""
 
 #: plugin.py:451
 #, fuzzy
-#| msgid "Show \"EPG Importer\" in main menu"
+#| msgid "Show \"EPGImport\" in plugins"
 msgid "Show \"EPG import\" in epg menu"
-msgstr "Näytä \"EPG:n lataus\" päävalikossa"
+msgstr "Zobraziť \"EPGImport\" v pluginoch"
 
 #: plugin.py:451
 msgid ""
@@ -305,7 +309,7 @@ msgstr ""
 
 #: plugin.py:452
 msgid "Load long descriptions up to X days"
-msgstr "Lataa ohjelmakuvaukset X päivälle"
+msgstr "Načítanie dlhých popisov až na X dní"
 
 #: plugin.py:452
 msgid ""
@@ -317,7 +321,7 @@ msgstr ""
 
 #: plugin.py:453
 msgid "Run AutoTimer after import"
-msgstr "Käynnistä automaattiajastusten haku latauksen jälkeen"
+msgstr "Spustenie nástroja AutoTimer po importe"
 
 #: plugin.py:453
 msgid ""
@@ -327,7 +331,7 @@ msgstr ""
 
 #: plugin.py:454
 msgid "Clearing current EPG before import"
-msgstr "Tyhjennä nykyinen EPG ennen latausta"
+msgstr "Zúčtovanie aktuálneho EPG pred importom"
 
 #: plugin.py:454
 msgid ""
@@ -370,13 +374,13 @@ msgstr ""
 #, fuzzy
 #| msgid "Start import after booting up"
 msgid "Start import after standby"
-msgstr "Lataa uudelleenkäynnistyksen jälkeen"
+msgstr "Spustenie importu po spustení"
 
 #: plugin.py:458
 #, fuzzy
 #| msgid "Start import after booting up"
 msgid "Start import after resuming from standby mode."
-msgstr "Lataa uudelleenkäynnistyksen jälkeen"
+msgstr "Spustenie importu po spustení"
 
 #: plugin.py:459
 msgid "Hours after which the import is repeated"
@@ -411,19 +415,19 @@ msgstr ""
 #: plugin.py:648
 #, python-format
 msgid "Last: %s %s, %d events"
-msgstr "Ladattu: %s %s, %d tapahtumaa"
+msgstr "Posledný: %s %s, %d udalosti"
 
 #: plugin.py:658
 msgid ""
 "EPGImport\n"
 "Import of epg data is still in progress. Please wait."
 msgstr ""
-"EPG:n lataus\n"
-"EPG:n lataus käynnissä. Odota."
+"EPGImport\n"
+"Import epg dát stále prebieha. Prosím počkajte."
 
 #: plugin.py:669
 msgid "No active EPG sources found, nothing to do"
-msgstr "Ei löytynyt aktiivisia EPG lähteitä"
+msgstr "Nenašli sa žiadne aktívne zdroje EPG, nič nerobiť"
 
 #: plugin.py:673
 msgid ""
@@ -432,28 +436,28 @@ msgid ""
 "This may take a few minutes.\n"
 "Is this ok?"
 msgstr ""
-"EPG:n lataus\n"
-"EPG:n lataus alkaa.\n"
-"Tämä voi kestää muutaman minuutin.\n"
-"Onko tämä OK?"
+"EPGImport\n"
+"Spustí sa import údajov EPG.\n"
+"Môže to trvať niekoľko minút.\n"
+"Je to v poriadku?"
 
 #: plugin.py:685
 msgid ""
 "EPGImport Plugin\n"
 "Failed to start:\n"
 msgstr ""
-"EPG lataus\n"
-" Käynnistys epäonnistui:\n"
+"Doplnok EPGImport\n"
+"Nepodarilo sa spustiť:\n"
 
 #: plugin.py:701
 msgid "Show log"
-msgstr ""
+msgstr "Zobraziť záznam"
 
 #: plugin.py:753
 #, fuzzy
-#| msgid "Importing:"
+#| msgid "EPG-Importer"
 msgid "Import"
-msgstr "Ladataan:"
+msgstr "EPG-dovozca"
 
 #: plugin.py:754
 msgid "Import from Git"
@@ -461,7 +465,7 @@ msgstr ""
 
 #: plugin.py:795
 msgid "EPG Import Sources"
-msgstr "Lähteet"
+msgstr "Zdroje importu EPG"
 
 #: plugin.py:801
 msgid ""
@@ -485,37 +489,35 @@ msgstr ""
 
 #: plugin.py:1014
 msgid "Days Profile"
-msgstr "Valitse päivät"
+msgstr "Profil dní"
 
 #: plugin.py:1020
 msgid ""
 "You may not use this settings!\n"
 "At least one day a week should be included!"
 msgstr ""
-"Et voi käyttää tätä asetusta!\n"
-"Vähintään yksi päivä pitää valita!"
+"Tieto nastavenia nesmiete použiť!\n"
+"Mal by byť zahrnutý aspoň jeden deň v týždni!"
 
 #: plugin.py:1069
 msgid "Clear"
-msgstr "Tyhjennä"
+msgstr "Vyčistiť"
 
 #: plugin.py:1100
 msgid "EPG Import Log"
-msgstr "Loki"
+msgstr "Denník importu EPG"
 
 #: plugin.py:1106
-#, fuzzy
-#| msgid "Write to /tmp/EPGimport.log"
 msgid "Write to /tmp/epgimport.log"
-msgstr "Kirjoita lokiin /tmp/EPGimport.log"
+msgstr "Napíšte na /tmp/epgimport.log"
 
 #: plugin.py:1122
 msgid "Last import: "
-msgstr "Viimeisin lataus: "
+msgstr "Posledný import: "
 
 #: plugin.py:1122
 msgid " events\n"
-msgstr " tapahtumia\n"
+msgstr " Udalosti\n"
 
 #: plugin.py:1122
 msgid ""
@@ -525,22 +527,22 @@ msgid ""
 "Is this ok?"
 msgstr ""
 "\n"
-"EPG-tietojen lataus alkaa.\n"
-"Tämä voi kestää muutaman minuutin.\n"
-"Onko tämä OK?"
+"Spustí sa import epg dát.\n"
+"Môže to trvať niekoľko minút.\n"
+"Je to v poriadku?"
 
 #: plugin.py:1170
 #, python-format
 msgid "EPG Import finished, %d events"
-msgstr "Lataus valmis, %d tapahtumaa"
+msgstr "Epg Import dokončený, %d udalosti"
 
 #: plugin.py:1170
 msgid ""
 "You must restart Enigma2 to load the EPG data,\n"
 "is this OK?"
 msgstr ""
-"Enigma2 on uudelleenkäynnistettävä,\n"
-" OK?"
+"Ak chcete načítať údaje EPG, musíte reštartovať Enigma2,\n"
+"je to v poriadku?"
 
 #: plugin.py:1311
 msgid "No source file found !"
@@ -548,58 +550,19 @@ msgstr ""
 
 #: plugin.py:1512 plugin.py:1535
 #, fuzzy
-#| msgid "EPG Importer"
+#| msgid "EPG Import Log"
 msgid "EPG Import"
-msgstr "EPG:n lataus"
+msgstr "Denník importu EPG"
 
 #: plugin.py:1527
 msgid "Automated EPG Importer"
-msgstr "Automaattinen EPG:n lataus"
+msgstr "Automatizovaný stahovač EPG"
 
 #: plugin.py:1529
 #, fuzzy
 #| msgid "EPG-Importer"
 msgid "EPG-Importer Now"
-msgstr "EPG:n lataus"
+msgstr "EPG-dovozca"
 
 #~ msgid "Import current source"
-#~ msgstr "Lataa tämä lähde"
-
-#~ msgid "none"
-#~ msgstr "0"
-
-#~ msgid "Daily automatic import"
-#~ msgstr "Päivittäinen lataus"
-
-#~ msgid "Ok"
-#~ msgstr "Ok"
-
-#~ msgid "Show in extensions"
-#~ msgstr "Näytä laajennusvalikossa"
-
-#~ msgid "Show in plugin browser"
-#~ msgstr "Näytä lisäosavalikossa"
-
-#~ msgid "Skip the import"
-#~ msgstr "Ohita lataus"
-
-#~ msgid "Wake up and import"
-#~ msgstr "Herätä ja lataa"
-
-#~ msgid ""
-#~ "EPGImport Plugin\n"
-#~ "Import of epg data is still in progress. Please wait."
-#~ msgstr ""
-#~ "EPG lataus\n"
-#~ "EPG tietojen lataus kesken. Odota."
-
-#~ msgid ""
-#~ "EPGImport Plugin\n"
-#~ "Import of epg data will start\n"
-#~ "This may take a few minutes\n"
-#~ "Is this ok?"
-#~ msgstr ""
-#~ "EPG lataus\n"
-#~ "EPG tietojen lataus alkaa\n"
-#~ "Tämä voi kestää muutaman minuutin\n"
-#~ "OK?"
+#~ msgstr "Import aktuálneho zdroja"

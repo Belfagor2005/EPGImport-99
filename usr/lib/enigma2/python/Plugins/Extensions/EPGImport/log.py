@@ -14,27 +14,31 @@ try:  # python2 only
 except:	 # both python2 and python3
 	from io import StringIO
 
+
 logfile = StringIO()
 # Need to make our operations thread-safe.
 mutex = threading.Lock()
 
 
 def write(data):
-	with mutex:
-		# Check if the log exceeds 500kb
-		if logfile.tell() > 500000:
-			# Move the pointer to the beginning
+	mutex.acquire()
+	try:
+		if logfile.tell() > 8000:
+			# Do a sort of 8k round robin
 			logfile.seek(0)
-			logfile.truncate(0)	 # Clear the buffer
 		logfile.write(data)
+	finally:
+		mutex.release()
 	sys.stdout.write(data)
 
 
 def getvalue():
-	with mutex:
-		# Capture the current position
-		# pos = logfile.tell()
-		logfile.seek(0)	 # Move to the start of the buffer
-		head = logfile.read()  # Read the entire buffer
-		logfile.seek(0)	 # Reset to the start
-		return head
+	mutex.acquire()
+	try:
+		pos = logfile.tell()
+		head = logfile.read()
+		logfile.seek(0)
+		tail = logfile.read(pos)
+	finally:
+		mutex.release()
+	return head + tail

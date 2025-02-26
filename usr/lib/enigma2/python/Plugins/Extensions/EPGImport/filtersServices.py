@@ -1,16 +1,18 @@
 from __future__ import absolute_import
 from . import _
-from . import EPGConfig
 from Components.ActionMap import ActionMap
 from Components.Label import Label
 from Components.Sources.List import List
-from enigma import eServiceCenter, eServiceReference
+from enigma import eServiceReference, eServiceCenter
 from Screens.ChannelSelection import service_types_radio, service_types_tv, ChannelSelectionBase
 from Screens.ChoiceBox import ChoiceBox
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
 from ServiceReference import ServiceReference
 import os
+
+
+from . import EPGConfig
 
 OFF = 0
 EDIT_BOUQUET = 1
@@ -77,7 +79,7 @@ class FiltersList():
 	def load(self):
 		self.loadFrom('/etc/epgimport/ignore.conf')
 
-	def reload(self):
+	def reload_module(self):
 		self.services = []
 		self.load()
 
@@ -113,7 +115,7 @@ filtersServicesList = FiltersList()
 
 class filtersServicesSetup(Screen):
 	skin = """
-	<screen name="filtersServicesSetup" position="center,center" size="680,440" title="Ignore services list">
+	<screen name="filtersServicesSetup" position="center,center" size="680,470" title="Ignore services list">
 		<ePixmap position="0,390" size="140,40" pixmap="skin_default/buttons/red.png" alphatest="on" />
 		<ePixmap position="170,390" size="140,40" pixmap="skin_default/buttons/green.png"  alphatest="on" />
 		<ePixmap position="340,390" size="140,40" pixmap="skin_default/buttons/yellow.png" alphatest="on" />
@@ -134,7 +136,7 @@ class filtersServicesSetup(Screen):
 				}
 			</convert>
 		</widget>
-		<!-- <widget name="introduction" position="0,440" size="680,30" font="Regular;20" halign="center" valign="center" /> -->
+		<widget name="introduction" position="0,440" size="680,30" font="Regular;20" halign="center" valign="center" />
 	</screen>"""
 
 	def __init__(self, session):
@@ -149,16 +151,26 @@ class filtersServicesSetup(Screen):
 		self["key_green"] = Label(_("Add Provider"))
 		self["key_yellow"] = Label(_("Add Channel"))
 		self["key_blue"] = Label(" ")
-		# self["introduction"] = Label(_("press OK to save list"))
+		self["introduction"] = Label(_("press OK to save list"))
 		self.updateButtons()
-		self["actions"] = ActionMap(["OkCancelActions", "ColorActions"],
-									{"cancel": self.exit,
-									 "ok": self.keyOk,
-									 "red": self.keyRed,
-									 "green": self.keyGreen,
-									 "yellow": self.keyYellow,
-									 "blue": self.keyBlue}, -1)
-		self.setTitle(_("Ignore services list(press OK to save)"))
+
+		self["actions"] = ActionMap(
+			[
+				"OkCancelActions",
+				"ColorActions"
+			],
+			{
+				"cancel": self.exit,
+				"ok": self.keyOk,
+				"red": self.keyRed,
+				"green": self.keyGreen,
+				"yellow": self.keyYellow,
+				"blue": self.keyBlue,
+			},
+			-1
+		)
+
+		self.setTitle(_("Ignore services list"))
 
 	def keyRed(self):
 		cur = self["list"].getCurrent()
@@ -199,7 +211,7 @@ class filtersServicesSetup(Screen):
 	def keyOk(self):
 		self.RefList.save()
 		if self.RefList.services != self.prev_list:
-			self.RefList.reload()
+			self.RefList.reload_module()
 			EPGConfig.channelCache = {}
 		self.close()
 
@@ -229,7 +241,7 @@ class filtersServicesSetup(Screen):
 
 class filtersServicesSelection(ChannelSelectionBase):
 	skin = """
-	<screen position="center,center" size="560,430" title="Channel Selection">
+	<screen position="center,center" size="560,430" title="Select service to add...">
 		<ePixmap pixmap="skin_default/buttons/red.png" position="0,0" size="140,40" alphatest="on" />
 		<ePixmap pixmap="skin_default/buttons/green.png" position="140,0" size="140,40" alphatest="on" />
 		<ePixmap pixmap="skin_default/buttons/yellow.png" position="280,0" size="140,40" alphatest="on" />
@@ -246,7 +258,7 @@ class filtersServicesSelection(ChannelSelectionBase):
 		self.providers = providers
 		ChannelSelectionBase.__init__(self, session)
 		self.bouquet_mark_edit = OFF
-		self.setTitle(_("Channel Selection"))
+		self.setTitle(_("Select service to add..."))
 		self["actions"] = ActionMap(["OkCancelActions", "TvRadioActions"], {"cancel": self.close, "ok": self.channelSelected, "keyRadio": self.setModeRadio, "keyTV": self.setModeTv})
 		self.onLayoutFinish.append(self.setModeTv)
 

@@ -50,8 +50,8 @@ def xml_unescape(text):
 		return ''
 	text = text if PY3 else text.encode('utf-8')
 	return sub(
-		r'&#160;|&nbsp;|\s+',
-		' ',
+		r"&#160;|&nbsp;|\s+",
+		" ",
 		unescape(
 			text.strip(),
 			entities={
@@ -74,7 +74,7 @@ def get_xml_string(elem, name):
 	try:
 		for node in elem.findall(name):
 			txt = node.text
-			lang = node.get('lang', None)
+			lang = node.get("lang", None)
 			if not r and txt is not None:
 				r = txt
 			elif lang == "nl":
@@ -94,7 +94,7 @@ def get_xml_string(elem, name):
 
 	try:
 		# Assicura che il risultato sia una stringa
-		return r.encode('utf-8').decode('utf-8')  # Compatibile con Python 2 e 3
+		return r.encode("utf-8").decode("utf-8")  # Compatibile con Python 2 e 3
 	except UnicodeEncodeError as e:
 		print("[XMLTVConverter] Encoding error:", e)
 		return r  # Ritorna come fallback
@@ -109,18 +109,18 @@ def enumerateXML(fp, tag=None):
 	Yields:
 		ElementTree.Element objects matching the specified tag.
 	"""
-	doc = iterparse(fp, events=('start', 'end'))
+	doc = iterparse(fp, events=("start", "end"))
 	_, root = next(doc)  # Get the root element
 	depth = 0
 
 	for event, element in doc:
 		if tag is None or element.tag == tag:  # Process all nodes if no tag is specified
-			if event == 'start':
+			if event == "start":
 				depth += 1
-			elif event == 'end':
+			elif event == "end":
 				depth -= 1
 				if depth == 0:  # Tag is fully parsed
 					yield element
 					element.clear()  # Free memory for the element
-		elif event == 'end':  # Clear other elements to free memory
+		elif event == "end":  # Clear other elements to free memory
 			root.clear()
