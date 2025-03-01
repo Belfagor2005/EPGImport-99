@@ -17,15 +17,15 @@ except NameError:
 def quickptime(date_str):
 	return struct_time(
 		(
-			int(date_str[0:4]),  # Year
-			int(date_str[4:6]),  # Month
-			int(date_str[6:8]),  # Day
-			int(date_str[8:10]),  # Hour
-			int(date_str[10:12]),  # Minute
-			0,  # Second (set to 0)
-			-1,  # Weekday (set to -1 as unknown)
-			-1,  # Julian day (set to -1 as unknown)
-			0  # DST (Daylight Saving Time, set to 0 as unknown)
+			int(date_str[0:4]),     # Year
+			int(date_str[4:6]),     # Month
+			int(date_str[6:8]),     # Day
+			int(date_str[8:10]),    # Hour
+			int(date_str[10:12]),   # Minute
+			0,                      # Second (set to 0)
+			-1,                     # Weekday (set to -1 as unknown)
+			-1,                     # Julian day (set to -1 as unknown)
+			0                       # DST (Daylight Saving Time, set to 0 as unknown)
 		)
 	)
 
@@ -35,10 +35,10 @@ def get_time_utc(timestring, fdateparse):
 	try:
 		values = timestring.split(" ")
 		tm = fdateparse(values[0])
-		timeGm = timegm(tm)
-		# suppose file says +0300 => that means we have to substract 3 hours from localtime to get gmt
-		timeGm -= (3600 * int(values[1]) // 100)
-		return timeGm
+		time_gm = timegm(tm)
+		# suppose file says +0300 => that means we have to substract 3 hours from localtime to get GMT
+		time_gm -= (3600 * int(values[1]) // 100)
+		return time_gm
 	except Exception as e:
 		print("[XMLTVConverter] get_time_utc error:", e)
 		return 0

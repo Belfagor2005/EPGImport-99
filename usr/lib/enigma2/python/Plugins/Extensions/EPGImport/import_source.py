@@ -10,7 +10,7 @@
 """
 
 from os import listdir, makedirs, chdir, remove, walk, sync
-from os.path import join, isdir
+from os.path import join, isdir, exists
 from shutil import rmtree
 import tarfile
 import shutil
@@ -21,6 +21,7 @@ import ssl
 def main(url):
 	TMPSources = "/var/volatile/tmp/EPGimport-Sources-main"
 	dest_dir = "/etc/epgimport"
+	SETTINGS_FILE = "/etc/enigma2/epgimport.conf"
 
 	makedirs(TMPSources, exist_ok=True)
 	makedirs(dest_dir, exist_ok=True)
@@ -62,6 +63,8 @@ def main(url):
 			shutil.copy2(src_item, dest_dir)
 
 	shutil.rmtree(TMPSources, ignore_errors=True)
+	if exists(SETTINGS_FILE):
+		remove(SETTINGS_FILE)
 	sync()
 
 
