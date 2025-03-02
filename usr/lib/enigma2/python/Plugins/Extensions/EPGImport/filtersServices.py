@@ -21,8 +21,8 @@ EDIT_ALTERNATIVES = 2
 
 def getProviderName(ref):
 	typestr = ref.getData(0) in (2, 10) and service_types_radio or service_types_tv
-	pos = typestr.rfind(':')
-	rootstr = '%s (channelID == %08x%04x%04x) && %s FROM PROVIDERS ORDER BY name' % (typestr[:pos + 1], ref.getUnsignedData(4), ref.getUnsignedData(2), ref.getUnsignedData(3), typestr[pos + 1:])
+	pos = typestr.rfind(":")
+	rootstr = "%s (channelID == %08x%04x%04x) && %s FROM PROVIDERS ORDER BY name" % (typestr[:pos + 1], ref.getUnsignedData(4), ref.getUnsignedData(2), ref.getUnsignedData(3), typestr[pos + 1:])
 	provider_root = eServiceReference(rootstr)
 	serviceHandler = eServiceCenter.getInstance()
 	providerlist = serviceHandler.list(provider_root)
@@ -41,7 +41,7 @@ def getProviderName(ref):
 						if service == ref:
 							info = serviceHandler.info(provider)
 							return info and info.getName(provider) or "Unknown"
-	return ''
+	return ""
 
 
 class FiltersList():
@@ -51,19 +51,15 @@ class FiltersList():
 
 	def loadFrom(self, filename):
 		try:
-			cfg = open(filename, 'r')
-		except:
-			return
-		while True:
-			line = cfg.readline()
-			if not line:
-				break
-			if line[0] in '#;\n':
-				continue
-			ref = line.strip()
-			if ref not in self.services:
-				self.services.append(ref)
-		cfg.close()
+			with open(filename, "r") as cfg:
+				for line in cfg:
+					if line[0] in "#;\n":
+						continue
+					ref = line.strip()
+					if ref not in self.services:
+						self.services.append(ref)
+		except Exception as e:
+			print("Error loading from", filename, e)
 
 	def saveTo(self, filename):
 		try:
@@ -90,9 +86,8 @@ class FiltersList():
 		self.saveTo('/etc/epgimport/ignore.conf')
 
 	def addService(self, ref):
-		if isinstance(ref, str):
-			if ref not in self.services:
-				self.services.append(ref)
+		if isinstance(ref, str) and ref not in self.services:
+			self.services.append(ref)
 
 	def addServices(self, services):
 		if isinstance(services, list):
@@ -101,9 +96,8 @@ class FiltersList():
 					self.services.append(s)
 
 	def delService(self, ref):
-		if isinstance(ref, str):
-			if ref in self.services:
-				self.services.remove(ref)
+		if isinstance(ref, str) and ref in self.services:
+			self.services.remove(ref)
 
 	def delAll(self):
 		self.services = []

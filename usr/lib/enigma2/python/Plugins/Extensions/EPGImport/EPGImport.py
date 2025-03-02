@@ -7,20 +7,27 @@ from __future__ import print_function
 
 from . import log
 
-from Components.config import config
-from datetime import datetime
-from os import statvfs, symlink, unlink
-from os.path import exists, getsize, join, splitext
-from os.path import ismount
-from twisted.internet import reactor, threads
-from twisted.web.client import downloadPage
 import gzip
 import os
 import random
 import six
 import time
+
+from datetime import datetime
+from os import statvfs, symlink, unlink
+from os.path import exists, getsize, join, splitext, ismount
+from requests import packages, Session
+from requests.exceptions import HTTPError, RequestException
+from secrets import choice
+from string import ascii_lowercase
+from time import localtime, mktime, time
+from twisted.internet import reactor, threads
+from twisted.web.client import downloadPage
+
+
 import twisted.python.runtime
 
+from Components.config import config
 
 # convert to py3
 try:
@@ -67,12 +74,12 @@ except:  # python2
 
 
 # Used to check server validity
-HDD_EPG_DAT = '/hdd/epg.dat'
+HDD_EPG_DAT = "/hdd/epg.dat"
 if config.misc.epgcache_filename.value:
 	HDD_EPG_DAT = config.misc.epgcache_filename.value
 else:
 	config.misc.epgcache_filename.setValue(HDD_EPG_DAT)
-PARSERS = {'xmltv': 'gen_xmltv', 'genxmltv': 'gen_xmltv'}
+PARSERS = {"xmltv": "gen_xmltv", "genxmltv": "gen_xmltv"}
 sslverify = False
 date_format = "%Y-%m-%d"
 now = datetime.now()
@@ -125,9 +132,9 @@ for mp in mount_points:
 
 
 def relImport(name):
-	fullname = __name__.split('.')
+	fullname = __name__.split(".")
 	fullname[-1] = name
-	mod = __import__('.'.join(fullname))
+	mod = __import__(".".join(fullname))
 	for n in fullname[1:]:
 		mod = getattr(mod, n)
 
@@ -148,7 +155,7 @@ def getTimeFromHourAndMinutes(hour, minute):
 		raise ValueError("Minute must be between 0 and 59")
 
 	# Get the current local time
-	now = time.localtime()
+	now = localtime()
 
 	# Calculate the timestamp for the specified time (today with the given hour and minute)
 	begin = int(time.mktime((
@@ -403,7 +410,7 @@ class EPGImport:
 				self.fd.read(10)
 				self.fd.seek(0, 0)
 			except Exception as e:
-				print("[EPGImport[afterDownload]] File downloaded is not a valid xz file", filename, file=log)
+				print("[EPGImport][afterDownload] File downloaded is not a valid xz file", filename, file=log)
 				try:
 					print("[EPGImport][afterDownload] unlink", filename)
 					unlink_if_exists(filename)
@@ -413,9 +420,9 @@ class EPGImport:
 				return
 
 		else:
-			self.fd = open(filename, 'rb')
+			self.fd = open(filename, "rb")
 
-		if deleteFile and self.source.parser != 'epg.dat':
+		if deleteFile and self.source.parser != "epg.dat":
 			try:
 				print("[EPGImport][afterDownload] unlink", filename, file=log)
 				unlink_if_exists(filename)
@@ -436,7 +443,7 @@ class EPGImport:
 		if self.source.url in self.source.urls:
 			self.source.urls.remove(self.source.url)
 		if self.source.urls:
-			print("[EPGImport] Attempting alternative URL", file=log)
+			print("[EPGImport][downloadFail] Attempting alternative URL", file=log)
 			self.source.url = random.choice(self.source.urls)
 			print("[EPGImport][downloadFail] try alternative download url", self.source.url)
 			self.fetchUrl(self.source.url)
@@ -444,7 +451,6 @@ class EPGImport:
 			self.nextImport()
 
 	def afterChannelDownload(self, result, filename, deleteFile=True):
-		print("[EPGImport] afterChannelDownload filename", filename, file=log)
 		if filename:
 			try:
 				if not getsize(filename):
@@ -454,7 +460,7 @@ class EPGImport:
 				self.channelDownloadFail(e)
 				return
 		if twisted.python.runtime.platform.supportsThreads():
-			print("[EPGImport] Using twisted thread", file=log)
+			print("[EPGImport][afterChannelDownload] Using twisted thread", file=log)
 			threads.deferToThread(self.doThreadRead, filename).addCallback(lambda ignore: self.nextImport())
 			deleteFile = False  # Thread will delete it
 		else:
@@ -492,8 +498,8 @@ class EPGImport:
 			if filename.endswith('.gz'):
 				print("[EPGImport][readEpgDatFile] Uncompressing", filename, file=log)
 				import shutil
-				fd = gzip.open(filename, 'rb')
-				epgdat = open(HDD_EPG_DAT, 'wb')
+				fd = gzip.open(filename, "rb")
+				epgdat = open(HDD_EPG_DAT, "wb")
 				shutil.copyfileobj(fd, epgdat)
 				del fd
 				epgdat.close()
@@ -524,7 +530,7 @@ class EPGImport:
 				r, d = data
 				if d[0] > self.longDescUntil:
 					# Remove long description (save RAM memory)
-					d = d[:4] + ('',) + d[5:]
+					d = d[:4] + ("",) + d[5:]
 				try:
 					self.storage.importEvents(r, (d,))
 				except Exception as e:
@@ -548,7 +554,7 @@ class EPGImport:
 					r, d = data
 					if d[0] > self.longDescUntil:
 						# Remove long description (save RAM memory)
-						d = d[:4] + ('',) + d[5:]
+						d = d[:4] + ("",) + d[5:]
 					self.storage.importEvents(r, (d,))
 				except Exception as e:
 					print("[EPGImport][doRead] importEvents exception:", e, file=log)

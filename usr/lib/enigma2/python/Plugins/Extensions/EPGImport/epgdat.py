@@ -7,6 +7,7 @@ from __future__ import absolute_import, print_function
 import os
 import struct
 from datetime import datetime
+import time
 # EpgDatV8 = os.path.isfile("/etc/image-version") and "distro=openvix" in open("/etc/image-version").read()
 EpgDatV8 = True
 
@@ -261,7 +262,8 @@ class epgdat_class:
 				# unix format (second since 1970) and already GMT corrected
 				event_time_HMS = datetime.utcfromtimestamp(event[0])    # actually YYYY-MM-DD HH:MM:SS
 				dvb_date = event_time_HMS.toordinal() - self.EPG_PROLEPTIC_ZERO_DAY  # epg.dat date is = (proleptic date - epg_zero_day)
-				event_duration_HMS = datetime.utcfromtimestamp(event[1])  # actually 1970-01-01 HH:MM:SS
+				# event_duration_HMS = datetime.utcfromtimestamp(event[1])  # actually 1970-01-01 HH:MM:SS
+				event_duration_HMS = datetime.datetime(*time.gmtime(event[1])[:6])  # actually 1970-01-01 HH:MM:SS
 				# EVENT DATA
 				# simply create an incremental ID,  starting from '1'
 				# event_id appears to be per channel, so this should be okay.

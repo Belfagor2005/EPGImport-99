@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 from gzip import GzipFile
+import lzma
 from os import fstat, listdir, remove
 from os.path import exists, getmtime, join, split
 from pickle import dump, load, HIGHEST_PROTOCOL
@@ -11,6 +12,7 @@ from time import time
 from xml.etree.cElementTree import iterparse
 from zipfile import ZipFile
 from re import compile
+from collections import defaultdict
 
 from . import log
 from .filterCustomChannel import filterCustomChannel
@@ -111,7 +113,7 @@ class EPGChannel:
 			self.urls = [filename]
 		else:
 			self.urls = urls
-		self.items = None
+		self.items = defaultdict(set)
 		self.offset = offset
 
 	def openStream(self, filename):
@@ -121,10 +123,6 @@ class EPGChannel:
 		if filename.endswith(".gz"):
 			fd = GzipFile(fileobj=fd, mode="rb")
 		elif filename.endswith(".xz") or filename.endswith(".lzma"):
-			try:
-				import lzma
-			except ImportError:
-				from backports import lzma
 			fd = lzma.open(filename, "rb")
 		elif filename.endswith(".zip"):
 			from io import BytesIO
@@ -135,53 +133,56 @@ class EPGChannel:
 	def parse(self, filterCallback, downloadedFile, FilterChannelEnabled):
 		print("[EPGImport] Parsing channels from '%s'" % self.name, file=log)
 		channel_id_filter = set_channel_id_filter()
-		if self.items is None:
-			self.items = {}
+		self.items = defaultdict(set)
 
 		try:
 			stream = self.openStream(downloadedFile)
 			if stream is None:
 				print("[EPGImport] Error: Unable to open stream for", downloadedFile, file=log)
 				return
+			# here is a problem in the List of supported formats by iterparse: crash on file corrupt
+			# _lzma.LZMAError: Input format not supported by decoder
+			supported_formats = ['.xml', '.xml.gz', '.xml.xz']  # fixed
+			# Make sure the file is in a compatible format
+			if any(downloadedFile.endswith(ext) for ext in supported_formats):
+				context = iterparse(stream)
+				for event, elem in context:
+					if elem.tag == "channel":
+						ref = str(elem.text or '').strip()
+						channel_id = elem.get("id").lower()
+						if not channel_id or not ref:
+							continue  # Skip empty values
 
-			context = iterparse(stream)
-			for event, elem in context:
-				if elem.tag == "channel":
-					channel_id = elem.get("id", "").lower()
-					ref = str(elem.text or '').strip()
+						filter_result = channel_id_filter.match(channel_id)
 
-					if not channel_id or not ref:
-						continue  # Skip empty values
+						if filter_result and FilterChannelEnabled:
+							if filter_result.group():
+								print("[EPGImport] INFO: Skipping", filter_result.group(), "due to channel_id_filter.conf", file=log)
+							try:
+								if channel_id in self.items and ref in self.items[channel_id]:
+									self.items[channel_id] = list(dict.fromkeys(self.items[channel_id]))
+									self.items[channel_id].remove(ref)
+							except Exception as e:
+								print("[EPGImport] ERROR: Failed to remove ref:", ref, "from", self.items[channel_id], "Error:", e, file=log)
+						else:
+							if ref and filterCallback(ref):
+								if channel_id in self.items:
+									self.items[channel_id].append(ref)
+									self.items[channel_id] = list(dict.fromkeys(self.items[channel_id]))  # Ensure uniqueness
+								else:
+									self.items[channel_id] = [ref]
 
-					filter_result = channel_id_filter.match(channel_id)
-
-					if filter_result and FilterChannelEnabled:
-						if filter_result.group():
-							print("[EPGImport] INFO: Skipping", filter_result.group(), "due to channel_id_filter.conf", file=log)
-						try:
-							if channel_id in self.items and ref in self.items[channel_id]:
-								self.items[channel_id] = list(dict.fromkeys(self.items[channel_id]))
-								self.items[channel_id].remove(ref)
-						except Exception as e:
-							print("[EPGImport] ERROR: Failed to remove ref:", ref, "from", self.items[channel_id], "Error:", e, file=log)
-					else:
-						if filterCallback(ref):
-							if channel_id in self.items:
-								self.items[channel_id].append(ref)
-								self.items[channel_id] = list(dict.fromkeys(self.items[channel_id]))  # Ensure uniqueness
-							else:
-								self.items[channel_id] = [ref]
-
-					elem.clear()
+						elem.clear()
 		except Exception as e:
 			print("[EPGImport] ERROR: Failed to parse", downloadedFile, "Error:", e, file=log)
-
+			import traceback
+			traceback.print_exc()
 	def update(self, filterCallback, downloadedFile=None):
-		customFile = '/etc/epgimport/custom.channels.xml'
+		customFile = "/etc/epgimport/custom.channels.xml"
 		# Always read custom file since we don't know when it was last updated
 		# and we don't have multiple download from server problem since it is always a local file.
 		if not exists(customFile):
-			customFile = '/etc/epgimport/rytec.channels.xml'
+			customFile = "/etc/epgimport/rytec.channels.xml"
 
 		if exists(customFile):
 			print("[EPGImport] Parsing channels from '%s'" % customFile, file=log)
@@ -216,23 +217,11 @@ class EPGSource:
 	def __init__(self, path, elem, category=None, offset=0):
 		self.parser = elem.get("type", "gen_xmltv")
 		self.nocheck = int(elem.get("nocheck", 0))
-		"""
-		self.parser = elem.get("type")
-		nocheck = elem.get("nocheck")
-		if nocheck is None:
-			self.nocheck = 0
-		elif nocheck == "1":
-			self.nocheck = 1
-		else:
-			self.nocheck = 0
-		"""
 		self.urls = [e.text.strip() for e in elem.findall("url")]
 		self.url = choice(self.urls)
-		self.description = elem.findtext("description")
+		self.description = elem.findtext("description", self.url)
 		self.category = category
 		self.offset = offset
-		if not self.description:
-			self.description = self.url
 		self.format = elem.get("format", "xml")
 		self.channels = getChannels(path, elem.get("channels"), offset)
 
@@ -307,6 +296,7 @@ def storeUserSettings(filename=SETTINGS_FILE, sources=None):
 
 if __name__ == "__main__":
 	import sys
+	SETTINGS_FILE_PKL = "settings.pkl"
 	x = []
 	ln = []
 	path = "."
@@ -317,9 +307,9 @@ if __name__ == "__main__":
 		ln.append(t)
 		print(t)
 		x.append(p.description)
-	storeUserSettings("settings.pkl", [1, "twee"])
-	assert loadUserSettings("settings.pkl") == {"sources": [1, "twee"]}
-	remove("settings.pkl")
+	storeUserSettings(SETTINGS_FILE_PKL, [1, "twee"])
+	assert loadUserSettings(SETTINGS_FILE_PKL) == {"sources": [1, "twee"]}
+	remove(SETTINGS_FILE_PKL)
 	for p in enumSources(path, x):
 		t = (p.description, p.urls, p.parser, p.format, p.channels, p.nocheck)
 		assert t in ln

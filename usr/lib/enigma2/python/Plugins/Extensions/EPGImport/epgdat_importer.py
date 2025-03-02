@@ -36,19 +36,11 @@ class epgdatclass:
 		self.data = None
 		self.services = None
 		path = tmppath
-		"""
-		# for mount_point in mount_points:
-			# if '/media' in mount_point:
-				# path = mount_point
-		"""
-		if self.checkPath("/media/cf"):
-			path = "/media/cf"
-		if self.checkPath("/media/mmc"):
-			path = "/media/mmc"
-		if self.checkPath("/media/usb"):
-			path = "/media/usb"
-		if self.checkPath("/media/hdd"):
-			path = "/media/hdd"
+		for p in ["/media/cf", "/media/mmc", "/media/usb", "/media/hdd"]:
+			if self.checkPath(p):
+				path = p
+				break
+
 		self.epgfile = join(path, "epg_new.dat")
 		self.epg = epgdat.epgdat_class(path, settingspath, self.epgfile)
 
