@@ -71,7 +71,7 @@ SOURCE_LINKS = {
 
 # Set default configuration
 config.plugins.epgimport = ConfigSubsection()
-config.plugins.epgimport.enabled = ConfigEnableDisable(default=True)
+config.plugins.epgimport.enabled = ConfigEnableDisable(default=False)
 config.plugins.epgimport.runboot = ConfigSelection(
 	default="4",
 	choices=[
@@ -1032,10 +1032,10 @@ def main(session, **kwargs):
 	session.openWithCallback(doneConfiguring, EPGImportConfig)
 
 
-def doneConfiguring(session, retval=False):
+def doneConfiguring(*retVal):
 	"""user has closed configuration, check new values...."""
-	if retval is True and autoStartTimer is not None:
-		autoStartTimer.update(clock=True)
+	if autoStartTimer is not None:
+		autoStartTimer.update()
 
 
 def doneImport(reboot=False, epgfile=None):
