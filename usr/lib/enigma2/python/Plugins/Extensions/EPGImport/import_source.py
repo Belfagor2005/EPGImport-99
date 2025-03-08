@@ -9,26 +9,13 @@
 # Info corvoboys.org
 """
 
-from os import listdir, makedirs, chdir, remove, walk
+from os import listdir, makedirs, chdir, remove, walk, sync
 from os.path import join, isdir, exists
-from shutil import rmtree, copyfileobj, copytree, copy2
+from shutil import rmtree
 import tarfile
+import shutil
+import urllib.request
 import ssl
-
-
-def make_dirs(directory):
-	"""Create directory if it does not exist (compatible with Python 2 and 3)."""
-	try:
-		makedirs(directory)
-	except OSError:
-		if not isdir(directory):
-			raise
-
-
-try:
-	import urllib.request as urllib_request  # Python 3
-except ImportError:
-	import urllib2 as urllib_request  # Python 2
 
 
 def main(url):
@@ -36,14 +23,14 @@ def main(url):
 	dest_dir = "/etc/epgimport"
 	SETTINGS_FILE = "/etc/enigma2/epgimport.conf"
 
-	make_dirs(TMPSources)
-	make_dirs(dest_dir)
+	makedirs(TMPSources, exist_ok=True)
+	makedirs(dest_dir, exist_ok=True)
 
 	chdir(TMPSources)
 	tarball = "main.tar.gz"
 	context = ssl._create_unverified_context()
-	with urllib_request.urlopen(url, context=context) as response, open(tarball, "wb") as out_file:
-		copyfileobj(response, out_file)
+	with urllib.request.urlopen(url, context=context) as response, open(tarball, "wb") as out_file:
+		shutil.copyfileobj(response, out_file)
 
 	# Remove existing files in dest_dir before extracting
 	for item in listdir(dest_dir):
@@ -71,20 +58,11 @@ def main(url):
 	for item in listdir(extracted_dir):
 		src_item = join(extracted_dir, item)
 		if isdir(src_item):
-			copytree(src_item, join(dest_dir, item), dirs_exist_ok=True)
+			shutil.copytree(src_item, join(dest_dir, item), dirs_exist_ok=True)
 		else:
-			copy2(src_item, dest_dir)
+			shutil.copy2(src_item, dest_dir)
 
-	rmtree(TMPSources, ignore_errors=True)
+	shutil.rmtree(TMPSources, ignore_errors=True)
 	if exists(SETTINGS_FILE):
 		remove(SETTINGS_FILE)
-	try:
-		from os import sync
-		sync()
-	except ImportError:
-		pass
-
-
-if __name__ == "__main__":
-	url = "https://github.com/Belfagor2005/EPGimport-Sources/archive/refs/heads/main.tar.gz"  # url my git
-	main(url)
+	sync()

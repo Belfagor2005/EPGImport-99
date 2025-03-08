@@ -9,14 +9,15 @@ from Screens.ChoiceBox import ChoiceBox
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
 from ServiceReference import ServiceReference
-import os
-
+from os.path import isdir, join
+from os import system, mkdir
 
 from . import EPGConfig
 
 OFF = 0
 EDIT_BOUQUET = 1
 EDIT_ALTERNATIVES = 2
+SOURCE_PATH="/etc/epgimport"
 
 
 def getProviderName(ref):
@@ -63,17 +64,17 @@ class FiltersList():
 
 	def saveTo(self, filename):
 		try:
-			if not os.path.isdir('/etc/epgimport'):
-				os.system('mkdir /etc/epgimport')
-			cfg = open(filename, 'w')
+			if not isdir(SOURCE_PATH):
+				mkdir(SOURCE_PATH)
+			cfg = open(filename, "w")
 		except:
 			return
 		for ref in self.services:
-			cfg.write('%s\n' % (ref))
+			cfg.write("%s\n" % (ref))
 		cfg.close()
 
 	def load(self):
-		self.loadFrom('/etc/epgimport/ignore.conf')
+		self.loadFrom(join(SOURCE_PATH, "ignore.conf"))
 
 	def reload_module(self):
 		self.services = []
@@ -83,7 +84,7 @@ class FiltersList():
 		return self.services
 
 	def save(self):
-		self.saveTo('/etc/epgimport/ignore.conf')
+		self.saveTo(join(SOURCE_PATH, "ignore.conf"))
 
 	def addService(self, ref):
 		if isinstance(ref, str) and ref not in self.services:
@@ -159,11 +160,10 @@ class filtersServicesSetup(Screen):
 				"red": self.keyRed,
 				"green": self.keyGreen,
 				"yellow": self.keyYellow,
-				"blue": self.keyBlue,
+				"blue": self.keyBlue
 			},
 			-1
 		)
-
 		self.setTitle(_("Ignore services list"))
 
 	def keyRed(self):
@@ -185,8 +185,8 @@ class filtersServicesSetup(Screen):
 			if isinstance(ref, list):
 				self.RefList.addServices(ref)
 			else:
-				refstr = ':'.join(ref.toString().split(':')[:11])
-				if any(x in refstr for x in ('1:0:', '4097:0:', '5001:0:', '5002:0:')):
+				refstr = ":".join(ref.toString().split(":")[:11])
+				if any(x in refstr for x in ("1:0:", "4097:0:", "5001:0:", "5002:0:")):
 					self.RefList.addService(refstr)
 			self.updateList()
 			self.updateButtons()
@@ -217,7 +217,7 @@ class filtersServicesSetup(Screen):
 	def updateList(self):
 		self.list = []
 		for service in self.RefList.servicesList():
-			if '1:0:' in service:
+			if any(x in service for x in ("1:0:", "4097:0:", "5001:0:", "5002:0:")):
 				provname = getProviderName(eServiceReference(service))
 				servname = ServiceReference(service).getServiceName() or "N/A"
 				self.list.append((servname, provname, service))
@@ -259,7 +259,7 @@ class filtersServicesSelection(ChannelSelectionBase):
 	def channelSelected(self):
 		ref = self.getCurrentSelection()
 		if self.providers and (ref.flags & 7) == 7:
-			if 'provider' in ref.toString():
+			if "provider" in ref.toString():
 				menu = [(_("All services provider"), "providerlist")]
 
 				def addAction(choice):
@@ -273,7 +273,7 @@ class filtersServicesSelection(ChannelSelectionBase):
 									service = servicelist.getNext()
 									if not service.valid():
 										break
-									refstr = ':'.join(service.toString().split(':')[:11])
+									refstr = ":".join(service.toString().split(":")[:11])
 									providerlist.append((refstr))
 								if providerlist:
 									self.close(providerlist)
@@ -284,7 +284,7 @@ class filtersServicesSelection(ChannelSelectionBase):
 				self.enterPath(ref)
 		elif (ref.flags & 7) == 7:
 			self.enterPath(ref)
-		elif 'provider' not in ref.toString() and not self.providers and not (ref.flags & (64 | 128)) and '%3a//' not in ref.toString():
+		elif "provider" not in ref.toString() and not self.providers and not (ref.flags & (64 | 128)) and "%3a//" not in ref.toString():
 			if ref.valid():
 				self.close(ref)
 

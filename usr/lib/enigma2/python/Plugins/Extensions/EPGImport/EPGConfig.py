@@ -22,7 +22,8 @@ SETTINGS_FILE = "/etc/enigma2/epgimport.conf"
 
 channelCache = {}
 global filterCustomChannel
-# unnecessary but..
+
+
 try:
 	basestring
 except NameError:
@@ -109,10 +110,7 @@ class EPGChannel:
 	def __init__(self, filename, urls=None, offset=0):
 		self.mtime = None
 		self.name = filename
-		if urls is None:
-			self.urls = [filename]
-		else:
-			self.urls = urls
+		self.urls = [filename] if urls is None else urls
 		self.items = defaultdict(set)
 		self.offset = offset
 
@@ -148,8 +146,8 @@ class EPGChannel:
 				context = iterparse(stream)
 				for event, elem in context:
 					if elem.tag == "channel":
-						ref = str(elem.text or '').strip()
 						channel_id = elem.get("id").lower()
+						ref = str(elem.text or '').strip()
 						if not channel_id or not ref:
 							continue  # Skip empty values
 
@@ -177,6 +175,7 @@ class EPGChannel:
 			print("[EPGImport] ERROR: Failed to parse", downloadedFile, "Error:", e, file=log)
 			import traceback
 			traceback.print_exc()
+
 	def update(self, filterCallback, downloadedFile=None):
 		customFile = "/etc/epgimport/custom.channels.xml"
 		# Always read custom file since we don't know when it was last updated
@@ -221,6 +220,8 @@ class EPGSource:
 		self.url = choice(self.urls)
 		self.description = elem.findtext("description", self.url)
 		self.category = category
+		if not self.description:
+			self.description = self.url
 		self.offset = offset
 		self.format = elem.get("format", "xml")
 		self.channels = getChannels(path, elem.get("channels"), offset)

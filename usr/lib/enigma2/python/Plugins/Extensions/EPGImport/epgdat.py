@@ -1,4 +1,4 @@
-# epgdat.py  by Ambrosa http://www.dreamboxonline.com
+# epgdat.py by Ambrosa http://www.dreamboxonline.com
 # Heavily modified by MiLo http://www.sat4all.com/
 # Lots of stuff removed that i did not need.
 
@@ -15,15 +15,20 @@ EpgDatV8 = True
 
 try:
 	from . import dreamcrc
-	crc32_dreambox = lambda d, t: dreamcrc.crc32(d, t) & 0xffffffff
+
+	def crc32_dreambox(d, t):
+		return dreamcrc.crc32(d, t) & 0xFFFFFFFF
+
+	# crc32_dreambox = lambda d, t: dreamcrc.crc32(d, t) & 0xffffffff
 	print("[EPGImport] using C module, yay")
 except ImportError:
 	print("[EPGImport] failed to load C implementation, sorry")
-
-	# this table is used by CRC32 routine below (used by Dreambox for
-	# computing REF DESC value).
-	# The original DM routine is a modified CRC32 standard routine,
-	# so cannot use Python standard binascii.crc32()
+	"""
+	this table is used by CRC32 routine below (used by Dreambox for
+	computing REF DESC value).
+	The original DM routine is a modified CRC32 standard routine,
+	so cannot use Python standard binascii.crc32()
+	"""
 	CRCTABLE = (
 		0x00000000, 0x04C11DB7, 0x09823B6E, 0x0D4326D9,
 		0x130476DC, 0x17C56B6B, 0x1A864DB2, 0x1E475005,
@@ -90,19 +95,23 @@ except ImportError:
 		0xAFB010B1, 0xAB710D06, 0xA6322BDF, 0xA2F33668,
 		0xBCB4666D, 0xB8757BDA, 0xB5365D03, 0xB1F740B4
 	)
-	# CRC32 in Dreambox/DVB way (see CRCTABLE comment above)
-	# "crcdata" is the description string
-	# "crctype" is the description type (1 byte 0x4d or 0x4e)
-	# !!!!!!!!! IT'S VERY TIME CONSUMING !!!!!!!!!
+	"""
+	CRC32 in Dreambox/DVB way (see CRCTABLE comment above)
+	"crcdata" is the description string
+	"crctype" is the description type (1 byte 0x4d or 0x4e)
+	!!!!!!!!! IT'S VERY TIME CONSUMING !!!!!!!!!
+	"""
 
 	def crc32_dreambox(crcdata, crctype, crctable=CRCTABLE):
-		# ML Optimized: local CRCTABLE (locals are faster), remove self, remove code that has no effect, faster loop
-		# crc=0x00000000
-		# crc=((crc << 8 ) & 0xffffff00) ^ crctable[((crc >> 24) ^ crctype) & 0x000000ff]
+		"""
+		ML Optimized: local CRCTABLE (locals are faster), remove self, remove code that has no effect, faster loop
+		crc=0x00000000
+		crc=((crc << 8 ) & 0xffffff00) ^ crctable[((crc >> 24) ^ crctype) & 0x000000ff]
+		"""
 		crc = crctable[crctype & 0x000000ff]
 		crc = ((crc << 8) & 0xffffff00) ^ crctable[((crc >> 24) ^ len(crcdata)) & 0x000000ff]
 		for d in crcdata:
-			crc = ((crc << 8) & 0xffffff00) ^ crctable[((crc >> 24) ^ d) & 0x000000ff]
+			crc = ((crc << 8) & 0xffffff00) ^ crctable[((crc >> 24) ^ ord(d)) & 0x000000ff]
 		return crc
 
 

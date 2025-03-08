@@ -1,6 +1,6 @@
 from __future__ import absolute_import, print_function
-from os import popen, access, W_OK
-from os.path import join, ismount
+from os import popen
+from os.path import join
 from sys import platform
 from . import epgdat
 
@@ -12,23 +12,6 @@ if platform.startswith("win"):
 else:
 	tmppath = "/tmp"
 	settingspath = "/etc/enigma2"
-
-
-def getMountPoints():
-	mount_points = []
-	try:
-		with open('/proc/mounts', 'r') as mounts:
-			for line in mounts:
-				parts = line.split()
-				mount_point = parts[1]
-				if ismount(mount_point) and access(mount_point, W_OK):
-					mount_points.append(mount_point)
-	except Exception as e:
-		print("[EPGImport] Errore durante la lettura di /proc/mounts:", e)
-	return mount_points
-
-
-mount_points = getMountPoints()
 
 
 class epgdatclass:

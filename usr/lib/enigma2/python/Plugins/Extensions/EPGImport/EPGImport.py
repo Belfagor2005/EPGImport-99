@@ -10,10 +10,9 @@ from . import log
 import gzip
 from random import choice
 
-from datetime import datetime
 from os import statvfs, symlink, unlink
 from os.path import exists, getsize, join, splitext
-from requests import Session
+from requests import packages, Session
 from requests.exceptions import HTTPError, RequestException
 # from secrets import choice
 from string import ascii_lowercase
@@ -37,28 +36,7 @@ try:
 except NameError:
 	basestring = str
 
-
-def maybe_encode(text, encoding="utf-8"):
-	"""
-	Ensures that the text is properly encoded in Python 2 and 3.
-	:param text: The input text (assumed to be a string).
-	:param encoding: The encoding format (default: utf-8).
-	:return: Encoded text (if necessary).
-	"""
-	import sys
-	IS_PY2 = sys.version_info[0] == 2
-
-	if IS_PY2:
-		if isinstance(text, unicode):
-			return text.encode(encoding)
-		elif isinstance(text, basestring):
-			return text
-	else:
-		if isinstance(text, bytes):
-			return text.decode(encoding)
-		return text
-
-
+packages.urllib3.disable_warnings(packages.urllib3.exceptions.InsecureRequestWarning)
 # Used to check server validity
 HDD_EPG_DAT = "/hdd/epg.dat"
 if config.misc.epgcache_filename.value:
@@ -66,16 +44,10 @@ if config.misc.epgcache_filename.value:
 else:
 	config.misc.epgcache_filename.setValue(HDD_EPG_DAT)
 PARSERS = {"xmltv": "gen_xmltv", "genxmltv": "gen_xmltv"}
-sslverify = False
-date_format = "%Y-%m-%d"
-now = datetime.now()
-alloweddelta = 2
-CheckFile = "LastUpdate.txt"
-ServerStatusList = {}
 
 
 def threadGetPage(url=None, file=None, urlheaders=None, success=None, fail=None, *args, **kwargs):
-	# print("[EPGImport][threadGetPage] url, file, args, kwargs", url, "   ", file, "   ", args, "   ", kwargs)
+	# print("[EPGImport][threadGetPage] url, file, args, kwargs", url, "   ", file, "	", args, "	 ", kwargs)
 	try:
 		s = Session()
 		s.headers = {}
@@ -101,7 +73,8 @@ def threadGetPage(url=None, file=None, urlheaders=None, success=None, fail=None,
 
 	except HTTPError as httperror:
 		print("EPGImport][threadGetPage] Http error: ", httperror)
-		fail(httperror)  # E0602 undefined name "error"
+		fail(httperror)	 # E0602 undefined name "error"
+
 	except RequestException as error:
 		print("[EPGImport][threadGetPage] error: ", error)
 		# if fail is not None:
@@ -136,15 +109,15 @@ def getTimeFromHourAndMinutes(hour, minute):
 
 	# Calculate the timestamp for the specified time (today with the given hour and minute)
 	begin = int(mktime((
-		now.tm_year,     # Current year
-		now.tm_mon,      # Current month
-		now.tm_mday,     # Current day
-		hour,            # Specified hour
-		minute,          # Specified minute
-		0,               # Seconds (set to 0)
-		now.tm_wday,     # Day of the week
-		now.tm_yday,     # Day of the year
-		now.tm_isdst     # Daylight saving time (DST)
+		now.tm_year,	 # Current year
+		now.tm_mon,		 # Current month
+		now.tm_mday,	 # Current day
+		hour,			 # Specified hour
+		minute,			 # Specified minute
+		0,				 # Seconds (set to 0)
+		now.tm_wday,	 # Day of the week
+		now.tm_yday,	 # Day of the year
+		now.tm_isdst	 # Daylight saving time (DST)
 	)))
 
 	return begin
@@ -287,7 +260,7 @@ class EPGImport:
 		callInThread(threadGetPage, url=sourcefile, file=filename, urlheaders=Headers, success=afterDownload, fail=downloadFail)
 
 	def afterDownload(self, filename, deleteFile=False):
-		# print("[EPGImport][afterDownload] filename", filename, file=log)
+		# print("[EPGImport][afterDownload] filename", filename)
 		if not exists(filename):
 			self.downloadFail("File not exists")
 			return
@@ -312,7 +285,7 @@ class EPGImport:
 			try:  # read a bit to make sure it's a gzip file
 				self.fd.read(10)
 				self.fd.seek(0, 0)
-			except Exception as e:
+			except gzip.BadGzipFile as e:
 				print("[EPGImport][afterDownload] File downloaded is not a valid gzip file", filename, file=log)
 				try:
 					print("[EPGImport][afterDownload] unlink", filename)
@@ -331,7 +304,7 @@ class EPGImport:
 			try:  # read a bit to make sure it's an xz file
 				self.fd.read(10)
 				self.fd.seek(0, 0)
-			except Exception as e:
+			except lzma.LZMAError as e:
 				print("[EPGImport][afterDownload] File downloaded is not a valid xz file", filename, file=log)
 				try:
 					print("[EPGImport][afterDownload] unlink", filename)
@@ -468,7 +441,6 @@ class EPGImport:
 	def doRead(self):
 		"""called from reactor to read some data"""
 		try:
-			# returns tuple (ref, data) or None when nothing available yet.
 			data = next(self.iterator)
 			if data is not None:
 				self.eventCount += 1
