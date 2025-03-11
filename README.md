@@ -1,6 +1,10 @@
 ![](https://komarev.com/ghpvc/?username=Belfagor2005)
 
 
+[![Python package](https://github.com/Belfagor2005/EPGImport-99/actions/workflows/python-package.yml/badge.svg)](https://github.com/Belfagor2005/EPGImport-99/actions/workflows/python-package.yml)
+
+
+
 <img src="https://github.com/Belfagor2005/EPGImport-99/blob/main/screen/1.jpg?raw=true">
 
 <img src="https://github.com/Belfagor2005/EPGImport-99/blob/main/screen/2.jpg?raw=true">
