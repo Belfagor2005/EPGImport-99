@@ -56,19 +56,16 @@ def main(url):
 	chdir(TMPSources)
 	tarball = "main.tar.gz"
 	context = ssl._create_unverified_context()
-	"""
-	with urllib.request.urlopen(url, context=context) as response, open(tarball, "wb") as out_file:
-		copyfileobj(response, out_file)
-	"""
 
 	response = None
 	try:
-		response = urllib.request.urlopen(url, context)
+		response = url_open(url, context)
 		with open(tarball, "wb") as out_file:
 			copyfileobj(response, out_file)
 	finally:
 		if response:
 			response.close()
+
 	# Remove existing files in dest_dir before extracting
 	for item in listdir(dest_dir):
 		item_path = join(dest_dir, item)
@@ -107,3 +104,8 @@ def main(url):
 		sync()
 	except ImportError:
 		pass
+
+
+if __name__ == "__main__":
+	url = "https://github.com/your-repository/EPGimport-Sources/archive/main.tar.gz"
+	main(url)
