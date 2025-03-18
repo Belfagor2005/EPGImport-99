@@ -6,6 +6,7 @@ from gzip import GzipFile
 import lzma
 from os import fstat, listdir, remove
 from os.path import exists, getmtime, join, split
+from Components.config import config
 from pickle import dump, load, HIGHEST_PROTOCOL
 from random import choice
 from time import time
@@ -15,13 +16,20 @@ from re import compile
 from collections import defaultdict
 
 from . import log
-from .filterCustomChannel import filterCustomChannel
+
 
 # User selection stored here, so it goes into a user settings backup
 SETTINGS_FILE = "/etc/enigma2/epgimport.conf"
 
 channelCache = {}
+
 global filterCustomChannel
+
+# Verify that the epgimport configuration is defined
+if hasattr(config.plugins, "epgimport") and hasattr(config.plugins.epgimport, "filter_custom_channel"):
+	filterCustomChannel = config.plugins.epgimport.filter_custom_channel.value
+else:
+	filterCustomChannel = False  # Fallback is not defined
 
 
 try:
@@ -53,6 +61,34 @@ def getChannels(path, name, offset):
 	return c
 
 
+def enumerateXML(fp, tag=None):
+	"""
+	Enumerates ElementTree nodes from file object 'fp' for a specific tag.
+	Args:
+		fp: File-like object containing XML data.
+		tag: The XML tag to search for. If None, processes all nodes.
+	Yields:
+		ElementTree.Element objects matching the specified tag.
+	"""
+	doc = iterparse(fp, events=("start", "end"))
+	_, root = next(doc)  # Get the root element
+	depth = 0
+
+	for event, element in doc:
+		if tag is None or element.tag == tag:  # Process all nodes if no tag is specified
+			if event == "start":
+				depth += 1
+			elif event == "end":
+				depth -= 1
+				if depth == 0:  # Tag is fully parsed
+					yield element
+					element.clear()  # Free memory for the element
+				depth -= 1
+		if event == 'end' and element.tag != tag:  # Clear other elements to free memory
+			element.clear()
+	root.clear()
+
+
 """
 elem.clear()
 When you parse an XML file with iterparse(),
@@ -74,7 +110,7 @@ def set_channel_id_filter():
 					# Blank line in channel_id_filter.conf will produce a full match so we need to skip them.
 					if clean_channel_id_line:
 						try:
-							# We compile indivually every line just to report error
+							# We compile individually every line just to report error
 							full_filter = compile(clean_channel_id_line)
 						except:
 							print("[EPGImport] ERROR: " + clean_channel_id_line + " is not a valid regex. It will be ignored.", file=log)
@@ -85,6 +121,7 @@ def set_channel_id_filter():
 		# Return a dummy filter (empty line filter) all accepted except empty channel id
 		compiled_filter = compile("^$")
 		return (compiled_filter)
+
 	# Last char is | so remove it
 	full_filter = full_filter[:-1]
 	# all channel id are matched in lower case so creating the filter in lowercase too
@@ -115,12 +152,14 @@ class EPGChannel:
 		self.offset = offset
 
 	def openStream(self, filename):
+		if not exists(filename):
+			raise FileNotFoundError("EPGChannel - File not found: " + filename)
 		fd = open(filename, "rb")
 		if not fstat(fd.fileno()).st_size:
 			raise Exception("File is empty")
 		if filename.endswith(".gz"):
 			fd = GzipFile(fileobj=fd, mode="rb")
-		elif filename.endswith(".xz") or filename.endswith(".lzma"):
+		elif filename.endswith((".xz", ".lzma")):
 			fd = lzma.open(filename, "rb")
 		elif filename.endswith(".zip"):
 			from io import BytesIO
@@ -131,7 +170,7 @@ class EPGChannel:
 	def parse(self, filterCallback, downloadedFile, FilterChannelEnabled):
 		print("[EPGImport] Parsing channels from '%s'" % self.name, file=log)
 		channel_id_filter = set_channel_id_filter()
-		self.items = defaultdict(set)
+		self.items = defaultdict(list)
 
 		try:
 			stream = self.openStream(downloadedFile)
@@ -146,30 +185,26 @@ class EPGChannel:
 				context = iterparse(stream)
 				for event, elem in context:
 					if elem.tag == "channel":
-						channel_id = elem.get("id").lower()
+						channel_id = elem.get("id")
+						if channel_id:
+							channel_id = channel_id.lower()
 						ref = str(elem.text or '').strip()
 						if not channel_id or not ref:
 							continue  # Skip empty values
-
-						filter_result = channel_id_filter.match(channel_id)
-
-						if filter_result and FilterChannelEnabled:
-							if filter_result.group():
-								print("[EPGImport] INFO: Skipping", filter_result.group(), "due to channel_id_filter.conf", file=log)
-							try:
-								if channel_id in self.items and ref in self.items[channel_id]:
-									self.items[channel_id] = list(dict.fromkeys(self.items[channel_id]))
-									self.items[channel_id].remove(ref)
-							except Exception as e:
-								print("[EPGImport] ERROR: Failed to remove ref:", ref, "from", self.items[channel_id], "Error:", e, file=log)
-						else:
-							if ref and filterCallback(ref):
-								if channel_id in self.items:
-									self.items[channel_id].append(ref)
-									self.items[channel_id] = list(dict.fromkeys(self.items[channel_id]))  # Ensure uniqueness
-								else:
-									self.items[channel_id] = [ref]
-
+						# Apply filter on ref first
+						if ref and filterCallback(ref):
+							# Then, only after, apply the filter on the channel_id if enabled
+							filter_result = channel_id_filter.match(channel_id)
+							if filter_result and FilterChannelEnabled:
+								print(f"[EPGImport] INFO: Skipping {filter_result.group()} due to channel_id_filter.conf", file=log)
+								elem.clear()
+								continue
+							# Add ref only if the channel has not been excluded from the filter
+							if channel_id in self.items:
+								self.items[channel_id].append(ref)
+							else:
+								self.items[channel_id] = [ref]
+							self.items[channel_id] = list(set(self.items[channel_id]))
 						elem.clear()
 		except Exception as e:
 			print("[EPGImport] ERROR: Failed to parse", downloadedFile, "Error:", e, file=log)
@@ -231,8 +266,8 @@ def enumSourcesFile(sourcefile, filter=None, categories=False):
 	global channelCache
 	category = None
 	try:
-		with open(sourcefile, "rb") as f:
-			for event, elem in iterparse(f, events=("start", "end")):
+		with open(sourcefile, "rb") as file:
+			for event, elem in iterparse(file, events=("start", "end")):
 				if event == "end":
 					if elem.tag == "source":
 						# Calculate custom time offset in minutes

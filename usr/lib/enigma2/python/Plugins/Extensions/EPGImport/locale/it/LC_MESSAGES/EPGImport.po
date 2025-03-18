@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: EPGImport Italian Translation for Enigma2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-08 20:04+0100\n"
-"PO-Revision-Date: 2025-03-08 20:04+0100\n"
+"POT-Creation-Date: 2025-03-18 19:00+0100\n"
+"PO-Revision-Date: 2025-03-18 19:00+0100\n"
 "Last-Translator: Massimo Pissarello <mapi68@gmail.com>\n"
 "Language-Team: Italian <>\n"
 "Language: it_IT\n"
@@ -29,31 +29,31 @@ msgstr "Aggiungi canale"
 msgid "press OK to save list"
 msgstr "premere OK per salvare l'elenco"
 
-#: filtersServices.py:167 plugin.py:666
+#: filtersServices.py:166 plugin.py:642
 msgid "Ignore services list"
 msgstr "Ignora elenco servizi"
 
-#: filtersServices.py:196
+#: filtersServices.py:195
 msgid "Really delete all list?"
 msgstr "Eliminare davvero tutta la lista?"
 
-#: filtersServices.py:229
+#: filtersServices.py:228
 msgid "Delete selected"
 msgstr "Elimina selezionato"
 
-#: filtersServices.py:230
+#: filtersServices.py:229
 msgid "Delete all"
 msgstr "Elimina tutto"
 
-#: filtersServices.py:255
+#: filtersServices.py:254
 msgid "Select service to add..."
 msgstr "Seleziona Canale da aggiungere.."
 
-#: filtersServices.py:263
+#: filtersServices.py:262
 msgid "All services provider"
 msgstr "Fornitore di tutti i servizi"
 
-#: filtersServices.py:282 plugin.py:667
+#: filtersServices.py:281 plugin.py:643
 msgid "Select action"
 msgstr "Seleziona azione"
 
@@ -85,31 +85,31 @@ msgstr "salta importazione"
 msgid "Press OK"
 msgstr "Premi OK"
 
-#: plugin.py:125
+#: plugin.py:126
 msgid "Monday"
 msgstr "Lunedì"
 
-#: plugin.py:126
+#: plugin.py:127
 msgid "Tuesday"
 msgstr "Martedì"
 
-#: plugin.py:127
+#: plugin.py:128
 msgid "Wednesday"
 msgstr "Mercoledì"
 
-#: plugin.py:128
+#: plugin.py:129
 msgid "Thursday"
 msgstr "Giovedì"
 
-#: plugin.py:129
+#: plugin.py:130
 msgid "Friday"
 msgstr "Venerdì"
 
-#: plugin.py:130
+#: plugin.py:131
 msgid "Saturday"
 msgstr "Sabato"
 
-#: plugin.py:131
+#: plugin.py:132
 msgid "Sunday"
 msgstr "Domenica"
 
@@ -117,16 +117,16 @@ msgstr "Domenica"
 msgid "EPG Import Configuration"
 msgstr "Configurazione di EPG Import"
 
-#: plugin.py:328 plugin.py:620
+#: plugin.py:328 plugin.py:626
 #, python-format
 msgid "Last import: %s events"
 msgstr "Ultima importazione: %s eventi"
 
-#: plugin.py:329 plugin.py:714 plugin.py:883
+#: plugin.py:329 plugin.py:758 plugin.py:934
 msgid "Cancel"
 msgstr "Annulla"
 
-#: plugin.py:330 plugin.py:715 plugin.py:884 plugin.py:960
+#: plugin.py:330 plugin.py:759 plugin.py:935 plugin.py:1012
 msgid "Save"
 msgstr "Salva"
 
@@ -140,21 +140,13 @@ msgstr "Sorgenti"
 
 #: plugin.py:365
 #, python-format
-msgid ""
-"Filtering:\n"
-"%s Please wait!"
-msgstr ""
-"Filtraggio:\n"
-"%s Prego attendere!"
+msgid "Filtering: %s Please wait!"
+msgstr "Filtraggio: %s Prego attendere!"
 
 #: plugin.py:366
 #, python-format
-msgid ""
-"Importing:\n"
-"%s %s events"
-msgstr ""
-"Importazione:\n"
-"%s %s eventi"
+msgid "Importing: %s %s events"
+msgstr "Importazione: %s %s eventi"
 
 #: plugin.py:405
 msgid "Automatic import EPG"
@@ -424,24 +416,28 @@ msgstr "Inserisci il nome del comando shell."
 msgid "Settings saved successfully !"
 msgstr "Impostazioni salvate con successo!"
 
-#: plugin.py:552
+#: plugin.py:558
 msgid "Choose Directory:"
 msgstr "Scegli la Directory:"
 
-#: plugin.py:553
+#: plugin.py:559
 msgid "Choose directory"
 msgstr "Scegli la directory"
 
-#: plugin.py:583
+#: plugin.py:589
 msgid "SELECT YOUR CHOICE"
 msgstr "SELEZIONA LA TUA SCELTA"
 
-#: plugin.py:615
+#: plugin.py:621
 #, python-format
-msgid "Last: %s %s, %d events"
-msgstr "Ultima: %s %s, %d eventi"
+msgid "Last import: %s %s, %d events"
+msgstr "Ultima importazione: %s %s, %d eventi"
 
-#: plugin.py:625
+#: plugin.py:642
+msgid "Show log"
+msgstr "Mostra registro"
+
+#: plugin.py:653
 msgid ""
 "EPGImport\n"
 "Import of epg data is still in progress. Please wait."
@@ -449,11 +445,11 @@ msgstr ""
 "EPG Import\n"
 "Importazione dati EPG in corso..."
 
-#: plugin.py:635
+#: plugin.py:670
 msgid "No active EPG sources found, nothing to do"
 msgstr "Nessuna sorgente EPG attiva trovata, non posso fare niente"
 
-#: plugin.py:639
+#: plugin.py:682
 msgid ""
 "EPGImport\n"
 "Import of epg data will start.\n"
@@ -465,7 +461,7 @@ msgstr ""
 "Ci vorrà qualche minuto.\n"
 "Procedo?"
 
-#: plugin.py:651
+#: plugin.py:702
 msgid ""
 "EPGImport Plugin\n"
 "Failed to start:\n"
@@ -473,23 +469,19 @@ msgstr ""
 "Plugin EPG Import\n"
 "Avvio non riuscito:\n"
 
-#: plugin.py:666
-msgid "Show log"
-msgstr "Mostra registro"
-
-#: plugin.py:716
+#: plugin.py:760
 msgid "Import"
 msgstr "Importa"
 
-#: plugin.py:717
+#: plugin.py:761
 msgid "Import from Git"
 msgstr "Importa da Git"
 
-#: plugin.py:760
+#: plugin.py:803
 msgid "EPG Import Sources"
 msgstr "Sorgenti di EPG Import"
 
-#: plugin.py:766
+#: plugin.py:809
 msgid ""
 "Do you want to update Source now?\n"
 "\n"
@@ -499,23 +491,23 @@ msgstr ""
 "\n"
 "Attendi il messaggio di importazione riuscita!"
 
-#: plugin.py:778
+#: plugin.py:822
 msgid "Import failed with error: {}"
 msgstr "Import fallito con errore: {}"
 
-#: plugin.py:789
+#: plugin.py:834
 msgid "Update Aborted!"
 msgstr "Aggiornamento interrotto!"
 
-#: plugin.py:820
+#: plugin.py:865
 msgid "Sources saved successfully!"
 msgstr "Sorgenti salvate con successo!"
 
-#: plugin.py:902
+#: plugin.py:953
 msgid "Days Profile"
 msgstr "Profilo giorni"
 
-#: plugin.py:908
+#: plugin.py:957
 msgid ""
 "You may not use this settings!\n"
 "At least one day a week should be included!"
@@ -523,27 +515,27 @@ msgstr ""
 "Non puoi usare queste impostazioni!\n"
 "Dovrebbe essere incluso almeno un giorno della settimana!"
 
-#: plugin.py:957
+#: plugin.py:1009
 msgid "Clear"
 msgstr "Cancella"
 
-#: plugin.py:988
+#: plugin.py:1040
 msgid "EPG Import Log"
 msgstr "Registro di EPG Import"
 
-#: plugin.py:994
+#: plugin.py:1046
 msgid "Write to /tmp/epgimport.log"
 msgstr "Scrivi in ​​/tmp/epgimport.log"
 
-#: plugin.py:1010
+#: plugin.py:1071
 msgid "Last import: "
 msgstr "Ultima importazione: "
 
-#: plugin.py:1010
+#: plugin.py:1071
 msgid " events\n"
 msgstr " eventi\n"
 
-#: plugin.py:1010
+#: plugin.py:1072
 msgid ""
 "\n"
 "Import of epg data will start.\n"
@@ -555,12 +547,12 @@ msgstr ""
 "L'operazione potrebbe richiedere alcuni minuti.\n"
 "Procedo?"
 
-#: plugin.py:1059
+#: plugin.py:1124
 #, python-format
 msgid "EPG Import finished, %d events"
 msgstr "EPG Import ha terminato, %d eventi"
 
-#: plugin.py:1059
+#: plugin.py:1124
 msgid ""
 "You must restart Enigma2 to load the EPG data,\n"
 "is this OK?"
@@ -568,25 +560,29 @@ msgstr ""
 "Devi riavviare Enigma2 per caricare i dati EPG,\n"
 "procedo?"
 
-#: plugin.py:1198
+#: plugin.py:1272
 msgid "No source file found !"
 msgstr "Nessun file sorgente trovato!"
 
-#: plugin.py:1394
+#: plugin.py:1471
 msgid "EPG Import"
 msgstr "EPGImport"
 
-#: plugin.py:1409
+#: plugin.py:1486
 msgid "Automated EPG Importer"
 msgstr "Importatore automatizzato di EPG"
 
-#: plugin.py:1411
+#: plugin.py:1488
 msgid "EPGImport Now"
 msgstr "EPG Import Ora"
 
-#: plugin.py:1424
+#: plugin.py:1504
 msgid "EPGImport"
 msgstr "EPGImport"
+
+#, python-format
+#~ msgid "Last: %s %s, %d events"
+#~ msgstr "Ultima: %s %s, %d eventi"
 
 #~ msgid "checking service reference(default)"
 #~ msgstr "controllo riferimento servizio (predefinito)"

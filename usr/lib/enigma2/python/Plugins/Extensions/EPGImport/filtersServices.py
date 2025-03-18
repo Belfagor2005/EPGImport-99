@@ -10,14 +10,14 @@ from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
 from ServiceReference import ServiceReference
 from os.path import isdir, join
-from os import system, mkdir
+from os import mkdir
 
 from . import EPGConfig
 
 OFF = 0
 EDIT_BOUQUET = 1
 EDIT_ALTERNATIVES = 2
-SOURCE_PATH="/etc/epgimport"
+SOURCE_PATH = "/etc/epgimport"
 
 
 def getProviderName(ref):
@@ -148,7 +148,6 @@ class filtersServicesSetup(Screen):
 		self["key_blue"] = Label(" ")
 		self["introduction"] = Label(_("press OK to save list"))
 		self.updateButtons()
-
 		self["actions"] = ActionMap(
 			[
 				"OkCancelActions",
