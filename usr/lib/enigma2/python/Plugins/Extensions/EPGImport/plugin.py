@@ -115,6 +115,7 @@ config.plugins.epgimport.import_onlyiptv = ConfigYesNo(default=False)
 config.plugins.epgimport.clear_oldepg = ConfigYesNo(default=False)
 config.plugins.epgimport.filter_custom_channel = ConfigYesNo(default=True)
 config.plugins.epgimport.day_profile = ConfigSelection(choices=[("1", _("Press OK"))], default="1")
+
 config.plugins.extra_epgimport = ConfigSubsection()
 config.plugins.extra_epgimport.last_import = ConfigText(default="0")
 config.plugins.extra_epgimport.day_import = ConfigSubDict()
@@ -325,12 +326,14 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self.setup_title = _("EPG Import Configuration")
 		Screen.__init__(self, session)
 		self["status"] = Label()
-		self["statusbar"] = Label(_("Last import: %s events") % config.plugins.extra_epgimport.last_import.value)
 		self["key_red"] = Button(_("Cancel"))
 		self["key_green"] = Button(_("Save"))
 		self["key_yellow"] = Button(_("Manual"))
 		self["key_blue"] = Button(_("Sources"))
 		self["description"] = Label("")
+		self["statusbar"] = Label(_(""))
+		self.lastImportResult = None
+		self.updateStatus()
 		self["setupActions"] = ActionMap(
 			[
 				"SetupActions",
@@ -355,18 +358,18 @@ class EPGImportConfig(ConfigListScreen, Screen):
 			},
 			-1
 		)
-		self.lastImportResult = None
+
 		self.list = []
 		self.onChangedEntry = []
 		ConfigListScreen.__init__(self, self.list, session=self.session, on_change=self.changedEntry)
 		self.prev_onlybouquet = config.plugins.epgimport.import_onlybouquet.value
 		self.initConfig()
 		self.createSetup()
-		self.filterStatusTemplate = _("Filtering: %s Please wait!")
-		self.importStatusTemplate = _("Importing: %s %s events")
 		self.updateTimer = eTimer()
 		self.updateTimer.callback.append(self.updateStatus)
-		self.updateTimer.start(2000)
+		self.updateTimer.start(1000)
+		self.filterStatusTemplate = _("Filtering: %s Please wait!")
+		self.importStatusTemplate = _("Importing: %s %s events")
 		self.onLayoutFinish.append(self.__layoutFinished)
 
 	def changedEntry(self):
@@ -387,6 +390,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 	def __layoutFinished(self):
 		self.newConfig()
 		self.setTitle(self.setup_title)
+		self["statusbar"].setText(_("Last import: %s events") % config.plugins.extra_epgimport.last_import.value)
 
 	def initConfig(self):
 		dx = 4 * " "
@@ -613,13 +617,13 @@ class EPGImportConfig(ConfigListScreen, Screen):
 
 				d, t = FuzzyTime(int(start), inPast=True)
 			except Exception as e:
-				print("[EPGImport] Errore con FuzzyTime:", e)
+				print("[EPGImport] FuzzyTime Error:", e)
 				try:
 					d, t = FuzzyTime(int(start))
 				except Exception as e:
 					print("[EPGImport] Fallback with FuzzyTime also failed:", e)
 			self["statusbar"].setText(_("Last import: %s %s, %d events") % (d, t, count))
-		self.lastImportResult = lastImportResult
+			self.lastImportResult = lastImportResult
 
 	def keyInfo(self):
 		last_import = config.plugins.extra_epgimport.last_import.value
@@ -1106,7 +1110,7 @@ def doneImport(reboot=False, epgfile=None):
 	formatted_time = strftime("%Y-%m-%d %H:%M:%S", localtime(timestamp))
 	lastImportResult = (formatted_time, epgimport.eventCount)
 	try:
-		if lastImportResult and (lastImportResult != lastImportResult):
+		if lastImportResult:  #  and (lastImportResult != lastImportResult):
 			print('doneImport lastimport==', lastImportResult)
 			start, count = lastImportResult
 			current_time = asctime(localtime(time()))
