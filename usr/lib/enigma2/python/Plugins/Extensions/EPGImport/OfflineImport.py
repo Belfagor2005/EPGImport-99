@@ -45,7 +45,7 @@ class FakeEnigma:
 
 def importFrom(epgimport, sourceXml):
 	""" Hack to make this test run on Windows (where the reactor cannot handle files)"""
-	if sys.platform.startswith('win'):
+	if sys.platform.startswith("win"):
 		import twisted.python.runtime
 		twisted.python.runtime.platform.supportsThreads = lambda: False
 

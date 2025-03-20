@@ -106,6 +106,6 @@ def main(url):
 		pass
 
 
-if __name__ == "__main__":
-	url = "https://github.com/your-repository/EPGimport-Sources/archive/main.tar.gz"
-	main(url)
+# if __name__ == "__main__":
+	# url = "https://github.com/your-repository/EPGimport-Sources/archive/main.tar.gz"
+	# main(url)

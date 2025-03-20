@@ -4,6 +4,7 @@ from __future__ import print_function
 
 from gzip import GzipFile
 import lzma
+from io import BytesIO
 from os import fstat, listdir, remove
 from os.path import exists, getmtime, join, split
 from Components.config import config
@@ -13,7 +14,6 @@ from time import time
 from xml.etree.cElementTree import iterparse
 from zipfile import ZipFile
 from re import compile
-from collections import defaultdict
 
 from . import log
 
@@ -84,7 +84,7 @@ def enumerateXML(fp, tag=None):
 					yield element
 					element.clear()  # Free memory for the element
 				depth -= 1
-		if event == 'end' and element.tag != tag:  # Clear other elements to free memory
+		if event == "end" and element.tag != tag:
 			element.clear()
 	root.clear()
 
@@ -111,6 +111,7 @@ def set_channel_id_filter():
 					if clean_channel_id_line:
 						try:
 							# We compile individually every line just to report error
+							# re_test = compile(clean_channel_id_line)
 							full_filter = compile(clean_channel_id_line)
 						except:
 							print("[EPGImport] ERROR: " + clean_channel_id_line + " is not a valid regex. It will be ignored.", file=log)
@@ -148,7 +149,7 @@ class EPGChannel:
 		self.mtime = None
 		self.name = filename
 		self.urls = [filename] if urls is None else urls
-		self.items = defaultdict(set)
+		self.items = None  # defaultdict(set)
 		self.offset = offset
 
 	def openStream(self, filename):
@@ -162,7 +163,6 @@ class EPGChannel:
 		elif filename.endswith((".xz", ".lzma")):
 			fd = lzma.open(filename, "rb")
 		elif filename.endswith(".zip"):
-			from io import BytesIO
 			zip_obj = ZipFile(filename, "r")
 			fd = BytesIO(zip_obj.open(zip_obj.namelist()[0]).read())
 		return fd
@@ -170,44 +170,45 @@ class EPGChannel:
 	def parse(self, filterCallback, downloadedFile, FilterChannelEnabled):
 		print("[EPGImport] Parsing channels from '%s'" % self.name, file=log)
 		channel_id_filter = set_channel_id_filter()
-		self.items = defaultdict(list)
-
+		if self.items is None:
+			self.items = {}
+		# self.items = defaultdict(list)
 		try:
-			stream = self.openStream(downloadedFile)
-			if stream is None:
-				print("[EPGImport] Error: Unable to open stream for", downloadedFile, file=log)
-				return
-			# here is a problem in the List of supported formats by iterparse: crash on file corrupt
-			# _lzma.LZMAError: Input format not supported by decoder
-			supported_formats = ['.xml', '.xml.gz', '.xml.xz']  # fixed
-			# Make sure the file is in a compatible format
-			if any(downloadedFile.endswith(ext) for ext in supported_formats):
-				context = iterparse(stream)
-				for event, elem in context:
-					if elem.tag == "channel":
-						channel_id = elem.get("id")
-						if channel_id:
-							channel_id = channel_id.lower()
-						ref = str(elem.text or '').strip()
-						if not channel_id or not ref:
-							continue  # Skip empty values
-						# Apply filter on ref first
-						if ref and filterCallback(ref):
-							# Then, only after, apply the filter on the channel_id if enabled
-							filter_result = channel_id_filter.match(channel_id)
-							if filter_result and FilterChannelEnabled:
-								print(f"[EPGImport] INFO: Skipping {filter_result.group()} due to channel_id_filter.conf", file=log)
-								elem.clear()
-								continue
-							# Add ref only if the channel has not been excluded from the filter
-							if channel_id in self.items:
-								self.items[channel_id].append(ref)
-							else:
-								self.items[channel_id] = [ref]
-							self.items[channel_id] = list(set(self.items[channel_id]))
-						elem.clear()
+			context = iterparse(self.openStream(downloadedFile))
+			for event, elem in context:
+				if elem.tag == "channel":
+					id = elem.get("id")
+					id = id.lower()
+					filter_result = channel_id_filter.match(id)
+					if filter_result and FilterChannelEnabled:
+						# Just to avoid false positive in logging since the same parse function is used in two different cases.
+						if filter_result.group():
+							print("[EPGImport] INFO : skipping", filter_result.group(), "due to channel_id_filter.conf", file=log)
+						ref = str(elem.text)
+						if id and ref:
+							if filterCallback(ref):
+								if id in self.items:
+									try:
+										if ref in self.items[id]:
+											# remove only remove the first occurrence turning list into dict will make the reference unique so remove will work as expected.
+											self.items[id] = list(dict.fromkeys(self.items[id]))
+											self.items[id].remove(ref)
+									except Exception as e:
+										print("[EPGImport] failed to remove from list ", self.items[id], " ref ", ref, "Error:", e, file=log)
+					else:
+						# print("[EPGImport] INFO : processing", id, file=log)
+						ref = str(elem.text)
+						if id and ref:
+							if filterCallback(ref):
+								if id in self.items:
+									self.items[id].append(ref)
+									# turning list into dict will make the reference unique to avoid loading twice the same EPG data.
+								else:
+									self.items[id] = [ref]
+								self.items[id] = list(dict.fromkeys(self.items[id]))
+					elem.clear()
 		except Exception as e:
-			print("[EPGImport] ERROR: Failed to parse", downloadedFile, "Error:", e, file=log)
+			print("[EPGImport] failed to parse", downloadedFile, "Error:", e, file=log)
 			import traceback
 			traceback.print_exc()
 
@@ -253,11 +254,11 @@ class EPGSource:
 		self.nocheck = int(elem.get("nocheck", 0))
 		self.urls = [e.text.strip() for e in elem.findall("url")]
 		self.url = choice(self.urls)
-		self.description = elem.findtext("description", self.url)
+		self.description = elem.findtext("description")
 		self.category = category
+		self.offset = offset
 		if not self.description:
 			self.description = self.url
-		self.offset = offset
 		self.format = elem.get("format", "xml")
 		self.channels = getChannels(path, elem.get("channels"), offset)
 
@@ -278,7 +279,7 @@ def enumSourcesFile(sourcefile, filter=None, categories=False):
 
 						s = EPGSource(sourcefile, elem, category, offset)
 						elem.clear()
-						if filter is None or s.description in filter:
+						if (filter is None) or (s.description in filter):
 							yield s
 
 					elif elem.tag == "channel":

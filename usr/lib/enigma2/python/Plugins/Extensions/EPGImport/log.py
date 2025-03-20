@@ -23,7 +23,7 @@ mutex = threading.Lock()
 def write(data):
 	mutex.acquire()
 	try:
-		if logfile.tell() > 8000:
+		if logfile.tell() > 20000:
 			# Do a sort of 8k round robin
 			logfile.seek(0)
 		logfile.write(data)
@@ -41,4 +41,4 @@ def getvalue():
 		tail = logfile.read(pos)
 	finally:
 		mutex.release()
-	return head + tail
+	return head
