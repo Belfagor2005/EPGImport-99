@@ -177,36 +177,36 @@ class EPGChannel:
 			context = iterparse(self.openStream(downloadedFile))
 			for event, elem in context:
 				if elem.tag == "channel":
-					id_channel = elem.get("id")
-					if id_channel:
-						id_channel = id_channel.lower()
-					ref = str(elem.text)
-					filter_result = channel_id_filter.match(id_channel)
+					id = elem.get("id")
+					id = id.lower()
+					filter_result = channel_id_filter.match(id)
 					if filter_result and FilterChannelEnabled:
+						# Just to avoid false positive in logging since the same parse function is used in two different cases.
 						if filter_result.group():
-							print("[EPGImport] INFO : skipping " + filter_result.group() + " due to channel_id_filter.conf", file=log)
-						if id_channel and ref:
+							print("[EPGImport] INFO : skipping", filter_result.group(), "due to channel_id_filter.conf", file=log)
+						ref = str(elem.text)
+						if id and ref:
 							if filterCallback(ref):
-								if id_channel in self.items:
+								if id in self.items:
 									try:
-										if ref in self.items[id_channel]:
-											# deduplicate before remove
-											unique_refs = list(dict.fromkeys(self.items[id_channel]))
-											unique_refs.remove(ref)
-											self.items[id_channel] = unique_refs
+										if ref in self.items[id]:
+											# remove only remove the first occurrence turning list into dict will make the reference unique so remove will work as expected.
+											self.items[id] = list(dict.fromkeys(self.items[id]))
+											self.items[id].remove(ref)
 									except Exception as e:
-										print("[EPGImport] failed to remove from list " + str(self.items[id_channel]) + " ref " + ref + " Error: " + str(e), file=log)
+										print("[EPGImport] failed to remove from list ", self.items[id], " ref ", ref, "Error:", e, file=log)
 					else:
-						if id_channel and ref:
+						# print("[EPGImport] INFO : processing", id, file=log)
+						ref = str(elem.text)
+						if id and ref:
 							if filterCallback(ref):
-								if id_channel not in self.items:
-									self.items[id_channel] = []
-								self.items[id_channel].append(ref)
-								# deduplicate just once here
-								self.items[id_channel] = list(dict.fromkeys(self.items[id_channel]))
-
-				elem.clear()
-
+								if id in self.items:
+									self.items[id].append(ref)
+									# turning list into dict will make the reference unique to avoid loading twice the same EPG data.
+								else:
+									self.items[id] = [ref]
+								self.items[id] = list(dict.fromkeys(self.items[id]))
+					elem.clear()
 		except Exception as e:
 			print("[EPGImport] failed to parse", downloadedFile, "Error:", e, file=log)
 			import traceback
@@ -216,8 +216,8 @@ class EPGChannel:
 		customFile = "/etc/epgimport/custom.channels.xml"
 		# Always read custom file since we don't know when it was last updated
 		# and we don't have multiple download from server problem since it is always a local file.
-		# if not exists(customFile):
-			# customFile = "/etc/epgimport/rytec.channels.xml"
+		if not exists(customFile):
+			customFile = "/etc/epgimport/rytec.channels.xml"
 
 		if exists(customFile):
 			print("[EPGImport] Parsing channels from '%s'" % customFile, file=log)
