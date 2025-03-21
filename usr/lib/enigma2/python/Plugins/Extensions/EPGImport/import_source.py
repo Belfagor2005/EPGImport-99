@@ -13,7 +13,7 @@ from os import listdir, makedirs, chdir, remove, walk, sync
 from os.path import join, isdir, exists
 from shutil import rmtree, copyfileobj, copytree, copy2
 import tarfile
-import urllib.request
+# import urllib.request
 import ssl
 
 

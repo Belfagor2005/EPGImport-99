@@ -35,10 +35,10 @@ def write(data):
 def getvalue():
 	mutex.acquire()
 	try:
-		pos = logfile.tell()
+		# pos = logfile.tell()
 		head = logfile.read()
 		logfile.seek(0)
-		tail = logfile.read(pos)
+		# tail = logfile.read(pos)
 	finally:
 		mutex.release()
 	return head
