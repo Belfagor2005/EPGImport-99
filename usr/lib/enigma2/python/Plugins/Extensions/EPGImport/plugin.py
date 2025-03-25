@@ -769,7 +769,6 @@ class EPGImportSources(Screen):
 		self["key_blue"] = Button(_("Import from Git"))
 		self.tree = []
 		self.giturl = SOURCE_LINKS.get(config.plugins.epgimport.extra_source.value)
-
 		cfg = EPGConfig.loadUserSettings()
 		filter = cfg["sources"]
 		cat = None
@@ -778,15 +777,18 @@ class EPGImportSources(Screen):
 				sel = (filter is None) or (x.description in filter)
 				entry = (x.description, x.description, sel)
 				if cat is None:
-					# If no category defined, use a default one.
 					cat = ExpandableSelectionList.category("[.]")
-					self.tree.append(cat)
-				cat[0][2].append(entry)
+					if not any(cat[0][0] == c[0][0] for c in self.tree):
+						self.tree.append(cat)
+				if not any(entry[0] == e[0] for e in cat[0][2]):
+					cat[0][2].append(entry)
 				if sel:
 					ExpandableSelectionList.expand(cat, True)
 			else:
 				cat = ExpandableSelectionList.category(x)
-				self.tree.append(cat)
+				if not any(cat[0][0] == c[0][0] for c in self.tree):
+					self.tree.append(cat)
+
 		self["list"] = ExpandableSelectionList.ExpandableSelectionList(self.tree, enableWrapAround=True)
 		if self.tree:
 			self["key_yellow"].show()
@@ -846,9 +848,9 @@ class EPGImportSources(Screen):
 
 	def refresh_tree(self):
 		print("Refreshing tree...")
+		self.tree.clear()
 		cfg = EPGConfig.loadUserSettings()
 		filter = cfg["sources"]
-		self.tree = []
 		cat = None
 		for x in EPGConfig.enumSources(CONFIG_PATH, filter=None, categories=True):
 			if hasattr(x, "description"):
@@ -856,20 +858,27 @@ class EPGImportSources(Screen):
 				entry = (x.description, x.description, sel)
 				if cat is None:
 					cat = ExpandableSelectionList.category("[.]")
-					self.tree.append(cat)
-				cat[0][2].append(entry)
+					if not any(cat[0][0] == c[0][0] for c in self.tree):
+						self.tree.append(cat)
+					else:
+						print("Category " + str(cat[0][0]) + " already in tree")
+				if not any(entry[0] == e[0] for e in cat[0][2]):
+					cat[0][2].append(entry)
+				else:
+					print("Entry " + str(entry[0]) + " already in category")
 				if sel:
 					ExpandableSelectionList.expand(cat, True)
 			else:
 				cat = ExpandableSelectionList.category(x)
-				self.tree.append(cat)
+				if not any(cat[0][0] == c[0][0] for c in self.tree):
+					self.tree.append(cat)
+
 		self["list"].setList(self.tree)
-		# Show or hide the yellow key based on the tree content
 		if self.tree:
 			self["key_yellow"].show()
 		else:
 			self["key_yellow"].hide()
-		# Set the updated tree in the list
+
 		msg = _("Sources saved successfully!")
 		self.session.open(
 			MessageBox,

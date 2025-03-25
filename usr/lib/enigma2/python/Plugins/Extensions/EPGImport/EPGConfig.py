@@ -5,7 +5,7 @@ from __future__ import print_function
 from gzip import GzipFile
 import lzma
 from io import BytesIO
-from os import fstat, listdir, remove
+from os import fstat, listdir
 from os.path import exists, getmtime, join, split
 from Components.config import config
 from pickle import dump, load, HIGHEST_PROTOCOL
@@ -214,11 +214,12 @@ class EPGChannel:
 
 	def update(self, filterCallback, downloadedFile=None):
 		customFile = "/etc/epgimport/custom.channels.xml"
+		"""
 		# Always read custom file since we don't know when it was last updated
 		# and we don't have multiple download from server problem since it is always a local file.
-		# if not exists(customFile):
-			# customFile = "/etc/epgimport/rytec.channels.xml"
-
+		"""
+		if not exists(customFile):
+			customFile = "/etc/epgimport/rytec.channels.xml"
 		if exists(customFile):
 			print("[EPGImport] Parsing channels from '%s'" % customFile, file=log)
 			self.parse(filterCallback, customFile, filterCustomChannel)
@@ -331,6 +332,7 @@ def storeUserSettings(filename=SETTINGS_FILE, sources=None):
 	dump(container, open(filename, "wb"), HIGHEST_PROTOCOL)
 
 
+"""
 if __name__ == "__main__":
 	import sys
 	SETTINGS_FILE_PKL = "settings.pkl"
@@ -356,3 +358,4 @@ if __name__ == "__main__":
 		print("Update:", name)
 		c.update()
 		print("# of channels:", len(c.items))
+"""
