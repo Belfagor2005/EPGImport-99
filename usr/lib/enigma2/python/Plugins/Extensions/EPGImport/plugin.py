@@ -71,7 +71,7 @@ SOURCE_LINKS = {
 
 # Set default configuration
 config.plugins.epgimport = ConfigSubsection()
-config.plugins.epgimport.enabled = ConfigEnableDisable(default=False)
+config.plugins.epgimport.enabled = ConfigEnableDisable(default=True)
 config.plugins.epgimport.runboot = ConfigSelection(
 	default="4",
 	choices=[
@@ -265,17 +265,18 @@ lastImportResult = None
 
 
 def startImport():
-	EPGImport.HDD_EPG_DAT = config.misc.epgcache_filename.value
-	if config.plugins.epgimport.filter_custom_channel.value:
-		EPGConfig.filterCustomChannel = True
-	else:
-		EPGConfig.filterCustomChannel = False
-	if config.plugins.epgimport.clear_oldepg.value and hasattr(epgimport.epgcache, "flushEPG"):
-		EPGImport.unlink_if_exists(EPGImport.HDD_EPG_DAT)
-		EPGImport.unlink_if_exists(EPGImport.HDD_EPG_DAT + ".backup")
-		epgimport.epgcache.flushEPG()
-	epgimport.onDone = doneImport
-	epgimport.beginImport(longDescUntil=config.plugins.epgimport.longDescDays.value * 24 * 3600 + time())
+	if not epgimport.isImportRunning():
+		EPGImport.HDD_EPG_DAT = config.misc.epgcache_filename.value
+		if config.plugins.epgimport.filter_custom_channel.value:
+			EPGConfig.filterCustomChannel = True
+		else:
+			EPGConfig.filterCustomChannel = False
+		if config.plugins.epgimport.clear_oldepg.value and hasattr(epgimport.epgcache, "flushEPG"):
+			EPGImport.unlink_if_exists(EPGImport.HDD_EPG_DAT)
+			EPGImport.unlink_if_exists(EPGImport.HDD_EPG_DAT + ".backup")
+			epgimport.epgcache.flushEPG()
+		epgimport.onDone = doneImport
+		epgimport.beginImport(longDescUntil=config.plugins.epgimport.longDescDays.value * 24 * 3600 + time())
 
 
 # #################################
@@ -684,7 +685,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 				close_on_any_key=True
 			)
 			return
-		# make it a stack, first on top.
 		sources.reverse()
 		epgimport.sources = sources
 		msg = _("EPGImport\nImport of epg data will start.\nThis may take a few minutes.\nIs this ok?")
