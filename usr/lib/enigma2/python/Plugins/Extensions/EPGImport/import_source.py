@@ -45,7 +45,7 @@ def copytree_compat(src, dst):
 
 
 def main(url):
-	TMPSources = "/var/volatile/tmp/EPGimport-Sources-main"
+	TMPSources = "/tmp/EPGimport-Sources-main"
 	dest_dir = "/etc/epgimport"
 	SETTINGS_FILE = "/etc/enigma2/epgimport.conf"
 
@@ -67,12 +67,8 @@ def main(url):
 
 	# Remove existing files in dest_dir before extracting
 	for item in listdir(dest_dir):
-		item_path = join(dest_dir, item)
-		if isdir(item_path):
-			rmtree(item_path, ignore_errors=True)
-		else:
-			remove(item_path)
-
+		if item.endswith(".xml"):
+			remove(join(dest_dir, item))
 	try:
 		with tarfile.open(tarball, "r:gz") as tar:
 			for member in tar.getmembers():
@@ -111,4 +107,3 @@ def main(url):
 # if __name__ == "__main__":
 	# url = "https://github.com/Belfagor2005/EPGimport-Sources/archive/refs/heads/main.tar.gz"
 	# main(url)
-

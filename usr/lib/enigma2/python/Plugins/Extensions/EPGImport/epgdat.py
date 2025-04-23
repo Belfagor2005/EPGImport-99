@@ -10,7 +10,6 @@ from os import unlink
 from os.path import exists, join
 from struct import Struct, pack
 from time import gmtime
-
 # EpgDatV8 = os.path.isfile("/etc/image-version") and "distro=openvix" in open("/etc/image-version").read()
 EpgDatV8 = True
 
@@ -93,24 +92,24 @@ except ImportError:
 		0xAFB010B1, 0xAB710D06, 0xA6322BDF, 0xA2F33668,
 		0xBCB4666D, 0xB8757BDA, 0xB5365D03, 0xB1F740B4
 	)
-
+	"""
 	# CRC32 in Dreambox/DVB way (see CRCTABLE comment above)
 	# "crcdata" is the description string
 	# "crctype" is the description type (1 byte 0x4d or 0x4e)
 	# !!!!!!!!! IT'S VERY TIME CONSUMING !!!!!!!!!
 	def crc32_dreambox(crcdata, crctype, crctable=CRCTABLE):
 		# ML Optimized: local CRCTABLE (locals are faster), remove self, remove code that has no effect, faster loop
-		# crc=0x00000000L
-		# crc=((crc << 8 ) & 0xffffff00L) ^ crctable[((crc >> 24) ^ crctype) & 0x000000ffL ]
+		#crc=0x00000000L
+		#crc=((crc << 8 ) & 0xffffff00L) ^ crctable[((crc >> 24) ^ crctype) & 0x000000ffL ]
 
-		crc = crctable[crctype & 0x000000ff]
-		crc = ((crc << 8) & 0xffffff00) ^ crctable[((crc >> 24) ^ len(crcdata)) & 0x000000ff]
+		crc = crctable[crctype & 0x000000ffL]
+		crc = ((crc << 8 ) & 0xffffff00L) ^ crctable[((crc >> 24) ^ len(crcdata)) & 0x000000ffL]
 		for d in crcdata:
-			crc = ((crc << 8) & 0xffffff00) ^ crctable[((crc >> 24) ^ ord(d)) & 0x000000ff]
-		# return crc
-
-		# mod lululla
-		# def crc32_dreambox(crcdata, crctype, crctable=CRCTABLE):
+			crc=((crc << 8 ) & 0xffffff00L) ^ crctable[((crc >> 24) ^ ord(d)) & 0x000000ffL]
+		return crc
+	"""
+	# mod lululla
+	def crc32_dreambox(crcdata, crctype, crctable=CRCTABLE):
 		# Optimized CRC calculation for Dreambox
 		crc = crctable[crctype & 0x000000ff]  # Inizializzazione del valore CRC
 		crc = ((crc << 8) & 0xffffff00) ^ crctable[((crc >> 24) ^ len(crcdata)) & 0x000000ff]

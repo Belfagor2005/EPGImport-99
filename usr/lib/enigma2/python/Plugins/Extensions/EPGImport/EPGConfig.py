@@ -111,7 +111,6 @@ def set_channel_id_filter():
 					if clean_channel_id_line:
 						try:
 							# We compile individually every line just to report error
-							# re_test = compile(clean_channel_id_line)
 							full_filter = compile(clean_channel_id_line)
 						except:
 							print("[EPGImport] ERROR: " + clean_channel_id_line + " is not a valid regex. It will be ignored.", file=log)
@@ -121,7 +120,7 @@ def set_channel_id_filter():
 		print("[EPGImport] INFO: no channel_id_filter.conf file found.", file=log)
 		# Return a dummy filter (empty line filter) all accepted except empty channel id
 		compiled_filter = compile("^$")
-		return (compiled_filter)
+		return compiled_filter
 
 	# Last char is | so remove it
 	full_filter = full_filter[:-1]
@@ -141,7 +140,7 @@ def set_channel_id_filter():
 		else:
 			print("[EPGImport] INFO : final regex " + full_filter + " compiled successfully.", file=log)
 
-	return (compiled_filter)
+	return compiled_filter
 
 
 class EPGChannel:
@@ -155,9 +154,11 @@ class EPGChannel:
 	def openStream(self, filename):
 		if not exists(filename):
 			raise FileNotFoundError("EPGChannel - File not found: " + filename)
+
 		fd = open(filename, "rb")
 		if not fstat(fd.fileno()).st_size:
 			raise Exception("File is empty")
+
 		if filename.endswith(".gz"):
 			fd = GzipFile(fileobj=fd, mode="rb")
 		elif filename.endswith((".xz", ".lzma")):
@@ -206,7 +207,6 @@ class EPGChannel:
 								self.items[id_channel] = list(dict.fromkeys(self.items[id_channel]))
 
 				elem.clear()
-
 		except Exception as e:
 			print("[EPGImport] failed to parse", downloadedFile, "Error:", e, file=log)
 			import traceback
@@ -255,11 +255,11 @@ class EPGSource:
 		self.nocheck = int(elem.get("nocheck", 0))
 		self.urls = [e.text.strip() for e in elem.findall("url")]
 		self.url = choice(self.urls)
-		self.description = elem.findtext("description")
+		self.description = elem.findtext("description", self.url)
 		self.category = category
-		self.offset = offset
 		if not self.description:
 			self.description = self.url
+		self.offset = offset
 		self.format = elem.get("format", "xml")
 		self.channels = getChannels(path, elem.get("channels"), offset)
 

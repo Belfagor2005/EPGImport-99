@@ -2,8 +2,7 @@
 # you can supply a similar interface. See plugin.py and OfflineImport.py for
 # the contract.
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 from . import log
 
@@ -211,7 +210,6 @@ class EPGImport:
 		else:
 			self.longDescUntil = longDescUntil
 		self.nextImport()
-		return
 
 	def nextImport(self):
 		self.closeReader()
@@ -420,9 +418,8 @@ class EPGImport:
 				r, d = data
 				if len(d) >= 5:
 					if d[0] > self.longDescUntil:
-						# Remove long description (save RAM memory)
 						d = d[:4] + ("",) + d[5:]
-					"""
+
 					# for i, item in enumerate(d):
 						# print(f"[EPGImport][doThreadRead] ### Checking item {i}: {item}, type: {type(item)}")
 
@@ -433,7 +430,7 @@ class EPGImport:
 					)
 					# Debug: stampa la tupla d dopo le modifiche
 					print(f"[EPGImport][doThreadRead] ### Final Event data: {d}")
-					"""
+
 					try:
 						self.storage.importEvents(r, (d,))
 					except Exception as e:
@@ -451,15 +448,13 @@ class EPGImport:
 				print("[EPGImport][doThreadRead] warning: Could not remove '%s' intermediate" % filename, e, file=log)
 		return
 
-	"""
-	# def is_numeric(self, value):
-		# '''Check if integer value'''
-		# try:
-			# int(value)
-			# return True
-		# except ValueError:
-			# return False
-	"""
+	def is_numeric(self, value):
+		"""Check if integer value"""
+		try:
+			int(value)
+			return True
+		except ValueError:
+			return False
 
 	def doRead(self):
 		"""called from reactor to read some data"""
