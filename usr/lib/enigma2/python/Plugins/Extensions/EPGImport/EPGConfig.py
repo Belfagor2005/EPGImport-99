@@ -44,7 +44,6 @@ def isLocalFile(filename):
 
 
 def getChannels(path, name, offset):
-	global channelCache
 	if name in channelCache:
 		return channelCache[name]
 	dirname, filename = split(path)
@@ -265,7 +264,6 @@ class EPGSource:
 
 
 def enumSourcesFile(sourcefile, filter=None, categories=False):
-	global channelCache
 	category = None
 	try:
 		with open(sourcefile, "rb") as file:
