@@ -1113,7 +1113,7 @@ def doneConfiguring(*retVal):
 
 
 def doneImport(reboot=False, epgfile=None):
-	global _session, lastImportResult, BouquetChannelListList, serviceIgnoreList
+	global lastImportResult, BouquetChannelListList, serviceIgnoreList
 	BouquetChannelListList = None
 	serviceIgnoreList = None
 	timestamp = time()
