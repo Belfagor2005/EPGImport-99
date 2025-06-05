@@ -155,9 +155,13 @@ class EPGChannel:
 			raise FileNotFoundError("EPGChannel - File not found: " + filename)
 
 		fd = open(filename, "rb")
-		if not fstat(fd.fileno()).st_size:
-			raise Exception("File is empty")
 
+		# if not fstat(fd.fileno()).st_size:
+			# raise Exception("File is empty")
+
+		if not fstat(fd.fileno()).st_size:
+			print("[EPGImport] Warning: File is empty - " + filename, file=log)
+			return None
 		if filename.endswith(".gz"):
 			fd = GzipFile(fileobj=fd, mode="rb")
 		elif filename.endswith((".xz", ".lzma")):
@@ -174,7 +178,13 @@ class EPGChannel:
 			self.items = {}
 		# self.items = defaultdict(list)
 		try:
-			context = iterparse(self.openStream(downloadedFile))
+			stream = self.openStream(downloadedFile)
+			if not stream:
+				print("[EPGImport] Skipping empty file: " + downloadedFile, file=log)
+				return
+			context = iterparse(stream)
+
+			# context = iterparse(self.openStream(downloadedFile))
 			for event, elem in context:
 				if elem.tag == "channel":
 					id_channel = elem.get("id")
