@@ -29,7 +29,7 @@ from Screens.Screen import Screen
 import Screens.Standby
 from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools import Notifications
-from Tools.Directories import fileExists, SCOPE_PLUGINS, resolveFilename
+from Tools.Directories import fileExists
 from Tools.FuzzyDate import FuzzyTime
 from Tools.StbHardware import getFPWasTimerWakeup
 
@@ -47,13 +47,15 @@ def calcDefaultStarttime():
 	try:
 		# Use the last MAC byte as time offset (half-minute intervals)
 		offset = lastMACbyte() * 30
-	except:
+	except Exception as e:
+		print(e)
 		offset = 7680
 	return (5 * 60 * 60) + offset
 
 
 # historically located (not a problem, we want to update it)
 CONFIG_PATH = "/etc/epgimport"
+AUTOTIMER_PLUGIN_PATH = "/usr/lib/enigma2/python/Plugins/Extensions/AutoTimer/plugin.py"
 STANDBY_FLAG_FILE = "/tmp/enigmastandby"
 ANSWER_BOOT_FILE = "/tmp/.EPGImportAnswerBoot"
 # Global variable
@@ -337,7 +339,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self["key_blue"] = Button(_("Sources"))
 		self["description"] = Label("")
 		self["statusbar"] = Label(_(""))
-		self.lastImportResult = None
 		self["setupActions"] = ActionMap(
 			[
 				"SetupActions",
@@ -366,6 +367,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self.filterStatusTemplate = _("Filtering: %s Please wait!")
 		self.importStatusTemplate = _("Importing: %s %s events")
 		self.list = []
+		self.lastImportResult = None
 		self.onChangedEntry = []
 		ConfigListScreen.__init__(self, self.list, session=self.session, on_change=self.changedEntry)
 		self.updateStatus()  # Now safe to call
@@ -457,8 +459,9 @@ class EPGImportConfig(ConfigListScreen, Screen):
 			if self.EPG.runboot.value == "1" or self.EPG.runboot.value == "2":
 				self.list.append(self.cfg_runboot_restart)
 		self.list.append(self.cfg_run_after_standby)
-		self.list.append(self.cfg_import_onlybouquet)
-		self.list.append(self.cfg_import_onlyiptv)
+		self._addOptionalConfig(self.list, self.cfg_import_onlybouquet)
+		self._addOptionalConfig(self.list, self.cfg_import_onlyiptv)
+
 		if hasattr(eEPGCache, "flushEPG"):
 			self.list.append(self.cfg_clear_oldepg)
 		self.list.append(self.cfg_filter_custom_channel)
@@ -466,15 +469,24 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self.list.append(self.cfg_execute_shell)
 		if self.EPG.execute_shell.value:
 			self.list.append(self.cfg_shell_name)
-		if fileExists(resolveFilename(SCOPE_PLUGINS, "Extensions/AutoTimer/plugin.pyo")) or fileExists(resolveFilename(SCOPE_PLUGINS, "Extensions/AutoTimer/plugin.pyc")):
+
+		if fileExists(AUTOTIMER_PLUGIN_PATH):
 			try:
 				self.list.append(self.cfg_parse_autotimer)
 			except:
 				print("[EPGImport] AutoTimer plugin not installed correctly", file=log)
-		self.list.append(self.cfg_showinmainmenu)
-		self.list.append(self.cfg_showinextensions)
+
+		self.list.extend([self.cfg_showinextensions, self.cfg_showinmainmenu])
 		self["config"].list = self.list
 		self["config"].l.setList(self.list)
+
+	def _addOptionalConfig(self, list, config):
+		"""Gestisce l'aggiunta di configurazioni opzionali che potrebbero fallire."""
+		try:
+			list.append(config)
+		except Exception as e:
+			print(e)
+			print("[EPGImport] Error adding: %s" % config, file=log)
 
 	def newConfig(self):
 		cur = self["config"].getCurrent()
@@ -497,7 +509,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 
 	def keyGreen(self):
 		self.updateTimer.stop()
-		if self.EPG.parse_autotimer.value and (not fileExists(resolveFilename(SCOPE_PLUGINS, "Extensions/AutoTimer/plugin.pyo")) or not fileExists(resolveFilename(SCOPE_PLUGINS, "Extensions/AutoTimer/plugin.pyc"))):
+		if self.EPG.parse_autotimer.value and not fileExists(AUTOTIMER_PLUGIN_PATH):
 			self.EPG.parse_autotimer.value = False
 		if self.EPG.deepstandby.value == "skip" and self.EPG.shutdown.value:
 			self.EPG.shutdown.value = False
@@ -1149,7 +1161,7 @@ def doneImport(reboot=False, epgfile=None):
 			)
 			print("[EPGImport] Need restart enigma2", file=log)
 	else:
-		if config.plugins.epgimport.parse_autotimer.value and (fileExists(resolveFilename(SCOPE_PLUGINS, "Extensions/AutoTimer/plugin.pyo")) or fileExists(resolveFilename(SCOPE_PLUGINS, "Extensions/AutoTimer/plugin.pyc"))):
+		if config.plugins.epgimport.parse_autotimer.value and fileExists(AUTOTIMER_PLUGIN_PATH):
 			try:
 				from Plugins.Extensions.AutoTimer.plugin import autotimer
 				if autotimer is None:
