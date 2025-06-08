@@ -65,20 +65,20 @@ filterCounter = 0
 isFilterRunning = 0
 
 SOURCE_LINKS = {
-	0: "https://github.com/oe-alliance/EPGimport-Sources/archive/refs/heads/main.tar.gz",
-	1: "https://github.com/Belfagor2005/EPGimport-Sources/archive/refs/heads/main.tar.gz"
+	"0": "https://github.com/doglover3920/EPGimport-Sources/archive/refs/heads/main.tar.gz",
+	"1": "https://github.com/Belfagor2005/EPGimport-Sources/archive/refs/heads/main.tar.gz"
 }
 
 # Set default configuration
 config.plugins.epgimport = ConfigSubsection()
 config.plugins.epgimport.enabled = ConfigEnableDisable(default=True)
 config.plugins.epgimport.runboot = ConfigSelection(
-	default=4,
+	default="4",
 	choices=[
-		(1, _("always")),
-		(2, _("only manual boot")),
-		(3, _("only automatic boot")),
-		(4, _("never"))
+		("1", _("always")),
+		("2", _("only manual boot")),
+		("3", _("only automatic boot")),
+		("4", _("never"))
 	]
 )
 config.plugins.epgimport.repeat_import = ConfigInteger(default=0, limits=(0, 23))
@@ -93,10 +93,10 @@ config.plugins.epgimport.deepstandby = ConfigSelection(
 	]
 )
 config.plugins.epgimport.extra_source = ConfigSelection(
-	default=0,
+	default="1",
 	choices=[
-		(0, "OE-Alliance"),
-		(1, "Lululla")
+		("0", "Doglover3920"),
+		("1", "Lululla")
 	]
 )
 config.plugins.epgimport.pathdb = ConfigDirectory(default='/etc/enigma2/epg.dat')
@@ -114,7 +114,8 @@ config.plugins.epgimport.import_onlybouquet = ConfigYesNo(default=False)
 config.plugins.epgimport.import_onlyiptv = ConfigYesNo(default=False)
 config.plugins.epgimport.clear_oldepg = ConfigYesNo(default=False)
 config.plugins.epgimport.filter_custom_channel = ConfigYesNo(default=True)
-config.plugins.epgimport.day_profile = NoSave(ConfigSelection(choices=[("1", _("Press OK"))], default="1"))
+config.plugins.epgimport.day_profile = ConfigSelection(choices=[("1", _("Press OK"))], default="1")
+
 config.plugins.extra_epgimport = ConfigSubsection()
 config.plugins.extra_epgimport.last_import = ConfigText(default="0")
 config.plugins.extra_epgimport.day_import = ConfigSubDict()
@@ -337,7 +338,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 		self["description"] = Label("")
 		self["statusbar"] = Label(_(""))
 		self.lastImportResult = None
-		self.updateStatus()
 		self["setupActions"] = ActionMap(
 			[
 				"SetupActions",
@@ -362,18 +362,19 @@ class EPGImportConfig(ConfigListScreen, Screen):
 			},
 			-1
 		)
-
+		# Initialize templates BEFORE first updateStatus call
+		self.filterStatusTemplate = _("Filtering: %s Please wait!")
+		self.importStatusTemplate = _("Importing: %s %s events")
 		self.list = []
 		self.onChangedEntry = []
 		ConfigListScreen.__init__(self, self.list, session=self.session, on_change=self.changedEntry)
-		self.prev_onlybouquet = config.plugins.epgimport.import_onlybouquet.value
-		self.initConfig()
-		self.createSetup()
+		self.updateStatus()  # Now safe to call
 		self.updateTimer = eTimer()
 		self.updateTimer.callback.append(self.updateStatus)
 		self.updateTimer.start(1000)
-		self.filterStatusTemplate = _("Filtering: %s Please wait!")
-		self.importStatusTemplate = _("Importing: %s %s events")
+		self.prev_onlybouquet = config.plugins.epgimport.import_onlybouquet.value
+		self.initConfig()
+		self.createSetup()
 		self.onLayoutFinish.append(self.__layoutFinished)
 
 	def changedEntry(self):
@@ -604,6 +605,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
 
 	def updateStatus(self):
 		text = ""
+		global isFilterRunning, filterCounter
 		if isFilterRunning == 1:
 			text = self.filterStatusTemplate % (str(filterCounter))
 		elif epgimport.isImportRunning():
@@ -1092,6 +1094,7 @@ class EPGImportDownloader(MessageBox):
 
 
 def msgClosed(ret):
+	global autoStartTimer
 	if ret:
 		if autoStartTimer is not None and not epgimport.isImportRunning():
 			print("[EPGImport] Run manual starting import", file=log)
@@ -1113,7 +1116,7 @@ def doneConfiguring(*retVal):
 
 
 def doneImport(reboot=False, epgfile=None):
-	global lastImportResult, BouquetChannelListList, serviceIgnoreList
+	global _session, lastImportResult, BouquetChannelListList, serviceIgnoreList
 	BouquetChannelListList = None
 	serviceIgnoreList = None
 	timestamp = time()
@@ -1412,6 +1415,7 @@ def WakeupDayOfWeek():
 
 
 def onBootStartCheck():
+	global autoStartTimer
 	print("[EPGImport] onBootStartCheck", file=log)
 	now = int(time())
 	wake = autoStartTimer.getStatus()
