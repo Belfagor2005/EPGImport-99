@@ -617,7 +617,6 @@ class EPGImportConfig(ConfigListScreen, Screen):
 
 	def updateStatus(self):
 		text = ""
-		global isFilterRunning, filterCounter
 		if isFilterRunning == 1:
 			text = self.filterStatusTemplate % (str(filterCounter))
 		elif epgimport.isImportRunning():
@@ -1106,7 +1105,6 @@ class EPGImportDownloader(MessageBox):
 
 
 def msgClosed(ret):
-	global autoStartTimer
 	if ret:
 		if autoStartTimer is not None and not epgimport.isImportRunning():
 			print("[EPGImport] Run manual starting import", file=log)
@@ -1128,7 +1126,7 @@ def doneConfiguring(*retVal):
 
 
 def doneImport(reboot=False, epgfile=None):
-	global _session, lastImportResult, BouquetChannelListList, serviceIgnoreList
+	global lastImportResult, BouquetChannelListList, serviceIgnoreList
 	BouquetChannelListList = None
 	serviceIgnoreList = None
 	timestamp = time()
@@ -1427,7 +1425,6 @@ def WakeupDayOfWeek():
 
 
 def onBootStartCheck():
-	global autoStartTimer
 	print("[EPGImport] onBootStartCheck", file=log)
 	now = int(time())
 	wake = autoStartTimer.getStatus()
