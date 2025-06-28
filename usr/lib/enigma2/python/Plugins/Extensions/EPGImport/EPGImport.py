@@ -2,24 +2,24 @@
 # you can supply a similar interface. See plugin.py and OfflineImport.py for
 # the contract.
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
+from __future__ import print_function
 
 from . import log
 
 import gzip
-from random import choice
 
 from os import statvfs, symlink, unlink
 from os.path import exists, getsize, join, splitext
 from requests import packages, Session
 from requests.exceptions import HTTPError, RequestException
+from random import choice
 from string import ascii_lowercase
 from time import localtime, mktime, time
 from twisted.internet import reactor, threads
 from twisted.internet.reactor import callInThread
-
-
 import twisted.python.runtime
+
 import lzma
 from Components.config import config
 
@@ -418,6 +418,7 @@ class EPGImport:
 				r, d = data
 				if len(d) >= 5:
 					if d[0] > self.longDescUntil:
+						# Remove long description (save RAM memory)
 						d = d[:4] + ("",) + d[5:]
 
 					# for i, item in enumerate(d):
@@ -449,7 +450,7 @@ class EPGImport:
 		return
 
 	def is_numeric(self, value):
-		"""Check if integer value"""
+		'''Check if integer value'''
 		try:
 			int(value)
 			return True

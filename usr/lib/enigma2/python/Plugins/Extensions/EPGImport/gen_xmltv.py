@@ -1,8 +1,10 @@
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
+from __future__ import print_function
+
 from . import xmltvconverter
 
-
 date_format = "%Y%m%d%H%M%S"
+
 """ New category add from Lululla """
 gen_categories = {
 	"Action sports": 0x40,
@@ -121,6 +123,7 @@ def new():
 
 
 class Gen_Xmltv():
+
 	def iterator(self, fd, channelsDict, offset=0):
 		try:
 			if not isinstance(channelsDict, dict):

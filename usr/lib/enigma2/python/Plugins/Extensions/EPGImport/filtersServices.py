@@ -1,17 +1,22 @@
 from __future__ import absolute_import
-from . import _
+
+from os import mkdir
+from os.path import isdir, join
+
+from enigma import eServiceCenter, eServiceReference
+
 from Components.ActionMap import ActionMap
 from Components.Label import Label
 from Components.Sources.List import List
-from enigma import eServiceReference, eServiceCenter
-from Screens.ChannelSelection import service_types_radio, service_types_tv, ChannelSelectionBase
+
+from Screens.ChannelSelection import ChannelSelectionBase, service_types_radio, service_types_tv
 from Screens.ChoiceBox import ChoiceBox
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
-from ServiceReference import ServiceReference
-from os.path import isdir, join
-from os import mkdir
 
+from ServiceReference import ServiceReference
+
+from . import _
 from . import EPGConfig
 
 OFF = 0

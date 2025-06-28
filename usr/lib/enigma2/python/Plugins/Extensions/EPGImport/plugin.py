@@ -1,38 +1,71 @@
 from __future__ import absolute_import, print_function
-from os import remove
+# Standard library
+from os import makedirs, remove
 from os.path import exists, join
-from time import localtime, mktime, strftime, strptime, time, asctime
-from enigma import eServiceCenter, eServiceReference, eEPGCache, eTimer, getDesktop, eConsoleAppContainer
+from time import asctime, localtime, mktime, strftime, strptime, time
 
+# Enigma2 core
+from enigma import (
+	eConsoleAppContainer,
+	eEPGCache,
+	eServiceCenter,
+	eServiceReference,
+	eTimer,
+	getDesktop
+)
+
+# Local plugin imports
 from . import _
-from . import log
+from . import EPGConfig
+from . import EPGImport
 from . import ExpandableSelectionList
 from . import filtersServices
-from . import EPGImport
-from . import EPGConfig
+from . import log
 
+# Enigma2 Components
 from Components.ActionMap import ActionMap
 from Components.Button import Button
-from Components.config import config, ConfigEnableDisable, ConfigSubsection, \
-	ConfigYesNo, ConfigClock, getConfigListEntry, ConfigText, ConfigInteger, ConfigDirectory, \
-	ConfigSelection, ConfigNumber, ConfigSubDict, NoSave
 from Components.ConfigList import ConfigListScreen
 from Components.Console import Console
 from Components.Label import Label
 import Components.PluginComponent
 from Components.ScrollLabel import ScrollLabel
+from Components.Sources.StaticText import StaticText
+
+from Components.config import (
+	config,
+	ConfigClock,
+	ConfigDirectory,
+	ConfigEnableDisable,
+	ConfigInteger,
+	ConfigNumber,
+	ConfigSelection,
+	ConfigSubDict,
+	ConfigSubsection,
+	ConfigText,
+	ConfigYesNo,
+	NoSave,
+	getConfigListEntry
+)
+
+# Enigma2 Plugins
 from Plugins.Plugin import PluginDescriptor
+
+# Enigma2 Screens
 from Screens.ChoiceBox import ChoiceBox
 from Screens.LocationBox import LocationBox
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
-import Screens.Standby
 from Screens.VirtualKeyBoard import VirtualKeyBoard
+import Screens.Standby
+
+# Enigma2 Tools
 from Tools import Notifications
 from Tools.Directories import fileExists
 from Tools.FuzzyDate import FuzzyTime
 from Tools.StbHardware import getFPWasTimerWakeup
 
+# Enigma2 Navigation
 import NavigationInstance
 
 
@@ -67,7 +100,7 @@ filterCounter = 0
 isFilterRunning = 0
 
 SOURCE_LINKS = {
-	"0": "https://github.com/doglover3920/EPGimport-Sources/archive/refs/heads/main.tar.gz",
+	"0": "https://github.com/oe-alliance/EPGimport-Sources/archive/refs/heads/main.tar.gz",
 	"1": "https://github.com/Belfagor2005/EPGimport-Sources/archive/refs/heads/main.tar.gz"
 }
 
@@ -97,7 +130,7 @@ config.plugins.epgimport.deepstandby = ConfigSelection(
 config.plugins.epgimport.extra_source = ConfigSelection(
 	default="1",
 	choices=[
-		("0", "Doglover3920"),
+		("0", "OE-Alliance"),
 		("1", "Lululla")
 	]
 )
@@ -774,10 +807,10 @@ class EPGImportSources(Screen):
 
 	def __init__(self, session):
 		Screen.__init__(self, session)
-		self["key_red"] = Button(_("Cancel"))
-		self["key_green"] = Button(_("Save"))
-		self["key_yellow"] = Button(_("Import"))
-		self["key_blue"] = Button(_("Import from Git"))
+		self["key_red"] = StaticText(_("Cancel"))
+		self["key_green"] = StaticText(_("Save"))
+		self["key_yellow"] = StaticText(_("Import"))
+		self["key_blue"] = StaticText(_("Update Sources"))
 		self.tree = []
 		self.giturl = SOURCE_LINKS.get(config.plugins.epgimport.extra_source.value)
 		cfg = EPGConfig.loadUserSettings()
@@ -801,10 +834,8 @@ class EPGImportSources(Screen):
 					self.tree.append(cat)
 
 		self["list"] = ExpandableSelectionList.ExpandableSelectionList(self.tree, enableWrapAround=True)
-		if self.tree:
-			self["key_yellow"].show()
-		else:
-			self["key_yellow"].hide()
+		self["key_yellow"].setText(_("Import") if self.tree else "")
+
 		self["setupActions"] = ActionMap(
 			[
 				"SetupActions",
@@ -862,6 +893,7 @@ class EPGImportSources(Screen):
 		self.tree.clear()
 		cfg = EPGConfig.loadUserSettings()
 		filter = cfg["sources"]
+		self.tree = []
 		cat = None
 		for x in EPGConfig.enumSources(CONFIG_PATH, filter=None, categories=True):
 			if hasattr(x, "description"):
@@ -885,10 +917,7 @@ class EPGImportSources(Screen):
 					self.tree.append(cat)
 
 		self["list"].setList(self.tree)
-		if self.tree:
-			self["key_yellow"].show()
-		else:
-			self["key_yellow"].hide()
+		self["key_yellow"].setText(_("Import") if self.tree else "")
 
 		msg = _("Sources saved successfully!")
 		self.session.open(
@@ -1034,10 +1063,10 @@ class EPGImportLog(Screen):
 		self.session = session
 		Screen.__init__(self, session)
 		self.log = log
-		self["key_red"] = Button(_("Clear"))
-		self["key_green"] = Button()
-		self["key_yellow"] = Button()
-		self["key_blue"] = Button(_("Save"))
+		self["key_red"] = StaticText(_("Clear"))
+		self["key_green"] = StaticText(_("Save"))
+		self["key_yellow"] = StaticText()
+		self["key_blue"] = StaticText(_("Save"))
 		self["list"] = ScrollLabel(self.log.getvalue())
 		self["actions"] = ActionMap(
 			[
@@ -1112,7 +1141,35 @@ def msgClosed(ret):
 
 
 def start_import(session, **kwargs):
-	session.openWithCallback(msgClosed, EPGImportDownloader)
+
+	def msgClosed(ret):
+		if ret:
+			print("[XMLTVImport] Run manual starting import", file=log)
+			autoStartTimer.runImport()
+
+	if epgimport.isImportRunning():
+		msg = _("EPGImport\nImport of epg data is still in progress. Please wait.")
+		session.open(
+			MessageBox,
+			msg,
+			MessageBox.TYPE_ERROR,
+			timeout=10,
+			close_on_any_key=True
+		)
+	else:
+		msg = (
+			_("Last import: ") +
+			config.plugins.extra_epgimport.last_import.value +
+			_(" events\n") +
+			_("\nImport of epg data will start.\nThis may take a few minutes.\nIs this ok?")
+		)
+		session.openWithCallback(
+			msgClosed,
+			MessageBox,
+			msg,
+			MessageBox.TYPE_YESNO,
+			timeout=15
+		)
 
 
 def main(session, **kwargs):
@@ -1129,12 +1186,24 @@ def doneImport(reboot=False, epgfile=None):
 	global lastImportResult, BouquetChannelListList, serviceIgnoreList
 	BouquetChannelListList = None
 	serviceIgnoreList = None
+
+	import logging
+	# Base logging configuration
+	logging.basicConfig(level=logging.DEBUG)
+	if epgfile is None:
+		logging.warning("EPG file not provided, proceeding without file.")
+	else:
+		logging.info("Import EPG file: %s" % epgfile)
+
 	timestamp = time()
 	formatted_time = strftime("%Y-%m-%d %H:%M:%S", localtime(timestamp))
+	# Log import result
+	logging.info("Import completed at %s" % formatted_time)
 	lastImportResult = (formatted_time, epgimport.eventCount)
+
 	try:
-		if lastImportResult:  # and (lastImportResult != lastImportResult):
-			print('doneImport lastimport==', lastImportResult)
+		if lastImportResult:
+			print("doneImport lastimport==", lastImportResult)
 			start, count = lastImportResult
 			current_time = asctime(localtime(time()))
 			lastimport = "%s, %d" % (current_time, count)
@@ -1143,6 +1212,7 @@ def doneImport(reboot=False, epgfile=None):
 			print("[EPGImport] Save last import date and count event", file=log)
 	except:
 		print("[EPGImport] Error to save last import date and count event", file=log)
+
 	if reboot:
 		if Screens.Standby.inStandby:
 			print("[EPGImport] Restart enigma2", file=log)
@@ -1467,6 +1537,7 @@ def autostart(reason, session=None, **kwargs):
 	"""called with reason=1 to during shutdown, with reason=0 at startup?"""
 	global autoStartTimer
 	global _session
+																				
 	if reason == 0 and _session is None:
 		if session is not None:
 			_session = session
@@ -1483,6 +1554,20 @@ def autostart(reason, session=None, **kwargs):
 				remove(STANDBY_FLAG_FILE)
 			except:
 				pass
+
+		sourcesFile = "/etc/epgimport.tar.gz"
+		if not exists(CONFIG_PATH):
+			makedirs(CONFIG_PATH)
+
+		if exists(sourcesFile):
+			try:
+				import tarfile
+				with tarfile.open(sourcesFile, 'r:gz') as tar:
+					tar.extractall(path=CONFIG_PATH)
+				remove(sourcesFile)
+			except Exception as e:
+				print(f"[XMLTVImport] Error extract sources {e}", file=log)
+
 	else:
 		print("[XMLTVImport] Stop", file=log)
 

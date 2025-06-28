@@ -153,15 +153,9 @@ class EPGChannel:
 	def openStream(self, filename):
 		if not exists(filename):
 			raise FileNotFoundError("EPGChannel - File not found: " + filename)
-
 		fd = open(filename, "rb")
-
-		# if not fstat(fd.fileno()).st_size:
-			# raise Exception("File is empty")
-
 		if not fstat(fd.fileno()).st_size:
-			print("[EPGImport] Warning: File is empty - " + filename, file=log)
-			return None
+			raise Exception("File is empty")
 		if filename.endswith(".gz"):
 			fd = GzipFile(fileobj=fd, mode="rb")
 		elif filename.endswith((".xz", ".lzma")):
@@ -178,13 +172,7 @@ class EPGChannel:
 			self.items = {}
 		# self.items = defaultdict(list)
 		try:
-			stream = self.openStream(downloadedFile)
-			if not stream:
-				print("[EPGImport] Skipping empty file: " + downloadedFile, file=log)
-				return
-			context = iterparse(stream)
-
-			# context = iterparse(self.openStream(downloadedFile))
+			context = iterparse(self.openStream(downloadedFile))
 			for event, elem in context:
 				if elem.tag == "channel":
 					id_channel = elem.get("id")
@@ -216,6 +204,7 @@ class EPGChannel:
 								self.items[id_channel] = list(dict.fromkeys(self.items[id_channel]))
 
 				elem.clear()
+
 		except Exception as e:
 			print("[EPGImport] failed to parse", downloadedFile, "Error:", e, file=log)
 			import traceback
@@ -264,11 +253,11 @@ class EPGSource:
 		self.nocheck = int(elem.get("nocheck", 0))
 		self.urls = [e.text.strip() for e in elem.findall("url")]
 		self.url = choice(self.urls)
-		self.description = elem.findtext("description", self.url)
+		self.description = elem.findtext("description")
 		self.category = category
+		self.offset = offset
 		if not self.description:
 			self.description = self.url
-		self.offset = offset
 		self.format = elem.get("format", "xml")
 		self.channels = getChannels(path, elem.get("channels"), offset)
 
