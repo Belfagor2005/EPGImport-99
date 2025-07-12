@@ -1,106 +1,67 @@
 #!/bin/bash
-
 ## setup source command=wget -q --no-check-certificate https://raw.githubusercontent.com/Belfagor2005/EPGImport-99/main/installer_source.sh -O - | /bin/bash
 
-## Only This 2 lines to edit with new version ######
 version="1"
 changelog="\n--Update Source xml EPGImport"
-
-
 TMPSources=/var/volatile/tmp/EPGimport-Sources-main
 
 if [ ! -d /usr/lib64 ]; then
-	PLUGINPATH=/usr/lib/enigma2/python/Plugins/Extensions/EPGImport
+    PLUGINPATH=/usr/lib/enigma2/python/Plugins/Extensions/EPGImport
 else
-	PLUGINPATH=/usr/lib64/enigma2/python/Plugins/Extensions/EPGImport
+    PLUGINPATH=/usr/lib64/enigma2/python/Plugins/Extensions/EPGImport
 fi
 
-## check depends packges
 if [ -f /var/lib/dpkg/status ]; then
-   STATUS=/var/lib/dpkg/status
-   OSTYPE=DreamOs
+    STATUS=/var/lib/dpkg/status
+    OSTYPE=DreamOs
 else
-   STATUS=/var/lib/opkg/status
-   OSTYPE=OE20
-fi
-echo ""
-if python --version 2>&1 | grep -q '^Python 3\.'; then
-	echo "You have Python3 image"
-	PYTHON=PY3
-	Packagesix=python3-six
-	Packagerequests=python3-requests
-else
-	echo "You have Python2 image"
-	PYTHON=PY2
-	Packagerequests=python-requests
+    STATUS=/var/lib/opkg/status
+    OSTYPE=OE20
 fi
 
-
-if [ -f /usr/bin/wget ]; then
-    echo "wget exist"
-else
-	if [ $OSTYPE = "DreamOs" ]; then
-		echo "dreamos"
-		apt-get update && apt-get install wget
-	else
-		opkg update && opkg install wget
-	fi
+if ! command -v wget >/dev/null; then
+    if [ "$OSTYPE" = "DreamOs" ]; then
+        apt-get update && apt-get install -y wget || { echo "Failed to install wget"; exit 1; }
+    else
+        opkg update && opkg install wget || { echo "Failed to install wget"; exit 1; }
+    fi
 fi
 
-
-# if [ $OSTYPE = "DreamOs" ]; then
-   # echo "# Your image is OE2.5/2.6 #"
-   # echo ""
-# else
-   # echo "# Your image is OE2.0 #"
-   # echo ""
-# fi
-
-echo PLUGINPATH = $PLUGINPATH
-ls -ld $PLUGINPATH
-
-## Check if plugin installed correctly
-if [ ! -d $PLUGINPATH ]; then
-	echo "Some thing wrong .. Plugin not installed"
-	exit 1
+if [ ! -d "$PLUGINPATH" ]; then
+    echo "EPGImport plugin not found at $PLUGINPATH"
+    exit 1
 fi
 
+mkdir -p "$TMPSources" || { echo "Failed to create temp directory"; exit 1; }
+mkdir -p '/etc/epgimport' || { echo "Failed to create epgimport directory"; exit 1; }
 
-## Check and update source from doglover3920
-# TMPSources=/var/volatile/tmp/EPGimport-Sources-main
-mkdir -p $TMPSources
-mkdir -p '/etc/epgimport'
-cd $TMPSources
-wget --no-check-certificate "https://github.com/Belfagor2005/EPGimport-Sources/archive/refs/heads/main.tar.gz"
-tar -xzf main.tar.gz
+cd "$TMPSources" || exit 1
+wget --no-check-certificate "https://github.com/Belfagor2005/EPGimport-Sources/archive/refs/heads/main.tar.gz" -O main.tar.gz || {
+    echo "Download failed"; exit 1;
+}
+
+tar -xzf main.tar.gz || {
+    echo "Extraction failed"; exit 1;
+}
+
 find "$TMPSources/EPGimport-Sources-main" -type f -name "*.bb" -delete
-cp -r $TMPSources/EPGimport-Sources-main/* '/etc/epgimport'
-# set +e
-cd
-sleep 2
+cp -r "$TMPSources/EPGimport-Sources-main"/* '/etc/epgimport' || {
+    echo "Copy failed"; exit 1;
+}
 
-
-rm -rf $TMPSources > /dev/null 2>&1
+rm -rf "$TMPSources"
 sync
 
-# # Identify the box type from the hostname file
+box_type=$(head -n 1 /etc/hostname 2>/dev/null || echo "Unknown")
 FILE="/etc/image-version"
-box_type=$(head -n 1 /etc/hostname)
-distro_value=$(grep '^distro=' "$FILE" | awk -F '=' '{print $2}')
-distro_version=$(grep '^version=' "$FILE" | awk -F '=' '{print $2}')
+distro_value=$(grep '^distro=' "$FILE" 2>/dev/null | awk -F '=' '{print $2}')
+distro_version=$(grep '^version=' "$FILE" 2>/dev/null | awk -F '=' '{print $2}')
 python_vers=$(python --version 2>&1)
+
 echo "#########################################################
-#               INSTALLED SUCCESSFULLY                  #
-#                developed by LULULLA                   #
-#               https://corvoboys.org                   #
+#          EPGImport Sources $version INSTALLED         #
 #########################################################
-
-^^^^^^^^^^Debug information:
 BOX MODEL: $box_type
-OO SYSTEM: $OSTYPE
-PYTHON: $python_vers
-IMAGE NAME: $distro_value
-IMAGE VERSION: $distro_version"
+IMAGE: ${distro_value:-Unknown} ${distro_version:-Unknown}"
 
-sleep 5
 exit 0
