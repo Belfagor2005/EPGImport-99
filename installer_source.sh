@@ -19,7 +19,7 @@ else
     OSTYPE=OE20
 fi
 
-if ! command -v wget >/dev/null; then
+if ! command -v wget >/dev/null 2>&1; then
     if [ "$OSTYPE" = "DreamOs" ]; then
         apt-get update && apt-get install -y wget || { echo "Failed to install wget"; exit 1; }
     else
@@ -45,6 +45,7 @@ tar -xzf main.tar.gz || {
 }
 
 find "$TMPSources/EPGimport-Sources-main" -type f -name "*.bb" -delete
+
 cp -r "$TMPSources/EPGimport-Sources-main"/* '/etc/epgimport' || {
     echo "Copy failed"; exit 1;
 }
@@ -59,7 +60,7 @@ distro_version=$(grep '^version=' "$FILE" 2>/dev/null | awk -F '=' '{print $2}')
 python_vers=$(python --version 2>&1)
 
 echo "#########################################################
-#          EPGImport Sources $version INSTALLED         #
+#          EPGImport Sources $version INSTALLED           #
 #########################################################
 BOX MODEL: $box_type
 IMAGE: ${distro_value:-Unknown} ${distro_version:-Unknown}"
