@@ -6,9 +6,15 @@ from . import xmltvconverter
 date_format = "%Y%m%d%H%M%S"
 
 """ New category add from Lululla """
+# ############  WARNING  #############
+# DONT EVER change that dict keys!   #
+# xmltv generators rely on that keys #
+# You can add only, but never change #
+# or remove keys from it.            #
 gen_categories = {
 	"Action sports": 0x40,
 	"Action": 0x10,
+	"Adult": 0x18,
 	"Adult Movie/Drama": 0x18,
 	"Adults only": 0x18,
 	"Adventure/Western/War": 0x12,
@@ -27,6 +33,7 @@ gen_categories = {
 	"Boxing": 0x40,
 	"Broadcasting/Press": 0x78,
 	"Cartoons/Puppets": 0x55,
+	"Children": 0x50,
 	"Children's/Youth Programme": 0x50,
 	"Comedy": 0x14,
 	"Comedy-drama": 0x14,
@@ -36,7 +43,7 @@ gen_categories = {
 	"Detective/Thriller": 0x11,
 	"Discussion/Interview/Debate": 0x24,
 	"Documentary": (0x23, 0),
-	"Drama": 0x10,
+	"Drama": 0x15,
 	"Economics/Social Advisory": 0x82,
 	"Education/Science/Factual": 0x90,
 	"Educational": (0x90, 0),
@@ -53,6 +60,7 @@ gen_categories = {
 	"Football/Soccer": 0x43,
 	"Foreign Countries/Expeditions": 0x94,
 	"Further Education": 0x96,
+	"GameShow": 0x31,
 	"Game Show/Quiz/Contest": 0x31,
 	"Gardening": 0xA7,
 	"Handicraft": 0xA2,
@@ -72,6 +80,7 @@ gen_categories = {
 	"Music": (0x60, 0),
 	"Music/Ballet/Dance": 0x60,
 	"Musical/Opera": 0x65,
+	"Nature": 0x91,
 	"Nature/Animals/Environment": 0x91,
 	"New Media": 0x79,
 	"News Magazine": 0x22,
@@ -113,7 +122,7 @@ gen_categories = {
 	"Variety Show": 0x32,
 	"Water Sport": 0x48,
 	"Weather": 0x21,
-	"Winter Sports": 0x49,
+	"Winter Sports": 0x49
 }
 
 
