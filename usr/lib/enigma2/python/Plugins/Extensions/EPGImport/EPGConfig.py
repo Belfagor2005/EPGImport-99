@@ -1,44 +1,35 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+# -*- coding: UTF-8 -*-
+from __future__ import absolute_import, print_function
 
-from __future__ import print_function
-from . import log
+import lzma
+from io import BytesIO
 from os import fstat, listdir
 from os.path import exists, getmtime, join, split
+from pickle import HIGHEST_PROTOCOL, dump, load
+from random import choice
+from re import compile
 from time import time
 from xml.etree.cElementTree import iterparse
-from collections import defaultdict
 from zipfile import ZipFile
 from gzip import GzipFile
-from random import choice
-from re import compile, sub
-import sys
 
+from Components.config import config
 
-try:
-    from backports import lzma
-except ImportError:
-    import lzma
+from . import log
 
-
-try:
-    from html import unescape  # Python 3
-except ImportError:
-    from HTMLParser import HTMLParser  # Python 2
-    unescape = HTMLParser().unescape
-
-PY3 = sys.version_info[0] == 3
-
-try:
-    from cPickle import dump, load, HIGHEST_PROTOCOL
-except ImportError:
-    from pickle import dump, load, HIGHEST_PROTOCOL
 
 # User selection stored here, so it goes into a user settings backup
 SETTINGS_FILE = "/etc/enigma2/epgimport.conf"
+
 channelCache = {}
 
 global filterCustomChannel
+
+# Verify that the epgimport configuration is defined
+if hasattr(config.plugins, "epgimport") and hasattr(config.plugins.epgimport, "filter_custom_channel"):
+    filterCustomChannel = config.plugins.epgimport.filter_custom_channel.value
+else:
+    filterCustomChannel = False  # Fallback is not defined
 
 
 try:
@@ -52,7 +43,7 @@ def isLocalFile(filename):
     return "://" not in filename
 
 
-def getChannels(path, name):
+def getChannels(path, name, offset):
     if name in channelCache:
         return channelCache[name]
     dirname, filename = split(path)
@@ -64,14 +55,14 @@ def getChannels(path, name):
         return channelCache[channelfile]
     except KeyError:
         pass
-    c = EPGChannel(channelfile)
+    c = EPGChannel(channelfile, offset=offset)
     channelCache[channelfile] = c
     return c
 
 
 def enumerateXML(fp, tag=None):
     """
-    Enumerates ElementTree nodes from file object fp for a specific tag.
+    Enumerates ElementTree nodes from file object 'fp' for a specific tag.
     Args:
         fp: File-like object containing XML data.
         tag: The XML tag to search for. If None, processes all nodes.
@@ -97,41 +88,14 @@ def enumerateXML(fp, tag=None):
     root.clear()
 
 
-def xml_unescape(text):
-    """
-    Unescapes XML/HTML entities in the given text.
-
-    :param text: The text that needs to be unescaped.
-    :type text: str
-    :rtype: str
-        """
-
-    if not isinstance(text, str if PY3 else basestring):
-        return ""
-
-    text = text if PY3 else text.encode("utf-8")
-    text = text.strip()
-
-    # Custom entity replacements
-    entity_map = {
-        "&laquo;": "«",
-        "&#171;": "«",
-        "&raquo;": "»",
-        "&#187;": "»",
-        "&apos;": "'",
-    }
-
-    # First, apply standard unescape
-    text = unescape(text)
-
-    # Replace specific entities
-    for entity, char in entity_map.items():
-        text = text.replace(entity, char)
-
-    # Normalize whitespace (replace `&#160;`, `&nbsp;`, and multiple spaces with a single space)
-    text = sub(r'&#160;|&nbsp;|\s+', " ", text)
-
-    return text
+"""
+elem.clear()
+When you parse an XML file with iterparse(),
+the elements are loaded into memory one at a time. However,
+if you don't explicitly clear them,
+the parser will keep everything in memory until the end of parsing,
+which can consume a lot of RAM, especially with large files.
+"""
 
 
 def set_channel_id_filter():
@@ -145,17 +109,17 @@ def set_channel_id_filter():
                     # Blank line in channel_id_filter.conf will produce a full match so we need to skip them.
                     if clean_channel_id_line:
                         try:
-                            # We compile indivually every line just to report error
+                            # We compile individually every line just to report error
                             full_filter = compile(clean_channel_id_line)
                         except:
-                            print("[EPGImport] ERROR: " + clean_channel_id_line + " is not a valid regex. It will be ignored.")
+                            print("[EPGImport] ERROR: " + clean_channel_id_line + " is not a valid regex. It will be ignored.", file=log)
                         else:
                             full_filter = full_filter + clean_channel_id_line + "|"
     except IOError:
-        print("[EPGImport]set_channel_id_filter: no channel_id_filter.conf file found.")
+        print("[EPGImport] INFO: no channel_id_filter.conf file found.", file=log)
         # Return a dummy filter (empty line filter) all accepted except empty channel id
         compiled_filter = compile("^$")
-        return (compiled_filter)
+        return compiled_filter
 
     # Last char is | so remove it
     full_filter = full_filter[:-1]
@@ -169,42 +133,46 @@ def set_channel_id_filter():
         try:
             compiled_filter = compile(full_filter)
         except:
-            print("[EPGImport]set_channel_id_filter ERROR: final regex " + full_filter + " doesn't compile properly.")
+            print("[EPGImport] ERROR: final regex " + full_filter + " doesn't compile properly.", file=log)
             # Return a dummy filter  (empty line filter) all accepted except empty channel id
             compiled_filter = compile("^$")
         else:
-            print("[EPGImport]set_channel_id_filter INFO : final regex " + full_filter + " compiled successfully.")
+            print("[EPGImport] INFO : final regex " + full_filter + " compiled successfully.", file=log)
 
-    return (compiled_filter)
+    return compiled_filter
 
 
 class EPGChannel:
-    def __init__(self, filename, urls=None):
+    def __init__(self, filename, urls=None, offset=0):
         self.mtime = None
         self.name = filename
         self.urls = [filename] if urls is None else urls
-        self.items = defaultdict(set)
+        self.items = None  # defaultdict(set)
+        self.offset = offset
 
     def openStream(self, filename):
         if not exists(filename):
             raise FileNotFoundError("EPGChannel - File not found: " + filename)
+
         fd = open(filename, "rb")
         if not fstat(fd.fileno()).st_size:
             raise Exception("File is empty")
+
         if filename.endswith(".gz"):
             fd = GzipFile(fileobj=fd, mode="rb")
         elif filename.endswith((".xz", ".lzma")):
             fd = lzma.open(filename, "rb")
         elif filename.endswith(".zip"):
-            from io import BytesIO
             zip_obj = ZipFile(filename, "r")
             fd = BytesIO(zip_obj.open(zip_obj.namelist()[0]).read())
         return fd
 
-    def parse(self, filterCallback, downloadedFile):
-        log.write("[EPGImport] Parsing channels from %s" % self.name)
+    def parse(self, filterCallback, downloadedFile, FilterChannelEnabled):
+        print("[EPGImport] Parsing channels from '%s'" % self.name, file=log)
+        channel_id_filter = set_channel_id_filter()
         if self.items is None:
             self.items = {}
+        # self.items = defaultdict(list)
         try:
             context = iterparse(self.openStream(downloadedFile))
             for event, elem in context:
@@ -213,34 +181,58 @@ class EPGChannel:
                     if id_channel:
                         id_channel = id_channel.lower()
                     ref = str(elem.text)
-                    if id_channel and ref and filterCallback(ref):
-                        # Init list if not present
-                        if id_channel not in self.items:
-                            self.items[id_channel] = []
-                        # Avoid duplicates on add
-                        if ref not in self.items[id_channel]:
-                            self.items[id_channel].append(ref)
-                    elem.clear()
+                    filter_result = channel_id_filter.match(id_channel)
+                    if filter_result and FilterChannelEnabled:
+                        if filter_result.group():
+                            print("[EPGImport] INFO : skipping " + filter_result.group() + " due to channel_id_filter.conf", file=log)
+                        if id_channel and ref:
+                            if filterCallback(ref):
+                                if id_channel in self.items:
+                                    try:
+                                        if ref in self.items[id_channel]:
+                                            # deduplicate before remove
+                                            unique_refs = list(dict.fromkeys(self.items[id_channel]))
+                                            unique_refs.remove(ref)
+                                            self.items[id_channel] = unique_refs
+                                    except Exception as e:
+                                        print("[EPGImport] failed to remove from list " + str(self.items[id_channel]) + " ref " + ref + " Error: " + str(e), file=log)
+                    else:
+                        if id_channel and ref:
+                            if filterCallback(ref):
+                                if id_channel not in self.items:
+                                    self.items[id_channel] = []
+                                self.items[id_channel].append(ref)
+                                # deduplicate just once here
+                                self.items[id_channel] = list(dict.fromkeys(self.items[id_channel]))
+
+                elem.clear()
         except Exception as e:
-            log.write("[EPGImport] Error while parsing channels: %s" % str(e))
+            print("[EPGImport] failed to parse", downloadedFile, "Error:", e, file=log)
+            import traceback
+            traceback.print_exc()
 
     def update(self, filterCallback, downloadedFile=None):
         customFile = "/etc/epgimport/custom.channels.xml"
+        """
         # Always read custom file since we don't know when it was last updated
         # and we don't have multiple download from server problem since it is always a local file.
+        """
         if not exists(customFile):
             customFile = "/etc/epgimport/rytec.channels.xml"
+
         if exists(customFile):
-            log.write("[EPGImport] Parsing channels from %s" % customFile)
-            self.parse(filterCallback, customFile)
-            print("[EPGImport] No customFile for Parsing channels: use rytec.channels.xml %s" % customFile)
+            print("[EPGImport] Parsing channels from '%s'" % customFile, file=log)
+            self.parse(filterCallback, customFile, filterCustomChannel)
         if downloadedFile is not None:
             self.mtime = time()
-            return self.parse(filterCallback, downloadedFile)
+            return self.parse(filterCallback, downloadedFile, True)
         elif (len(self.urls) == 1) and isLocalFile(self.urls[0]):
-            mtime = getmtime(self.urls[0])
-            if (not self.mtime) or (self.mtime < mtime):
-                self.parse(filterCallback, self.urls[0])
+            try:
+                mtime = getmtime(self.urls[0])
+            except:
+                mtime = None
+            if (not self.mtime) or (mtime is not None and self.mtime < mtime):
+                self.parse(filterCallback, self.urls[0], True)
                 self.mtime = mtime
 
     def downloadables(self):
@@ -258,7 +250,7 @@ class EPGChannel:
 
 
 class EPGSource:
-    def __init__(self, path, elem, category=None):
+    def __init__(self, path, elem, category=None, offset=0):
         self.parser = elem.get("type", "gen_xmltv")
         self.nocheck = int(elem.get("nocheck", 0))
         self.urls = [e.text.strip() for e in elem.findall("url")]
@@ -267,8 +259,9 @@ class EPGSource:
         self.category = category
         if not self.description:
             self.description = self.url
+        self.offset = offset
         self.format = elem.get("format", "xml")
-        self.channels = getChannels(path, elem.get("channels"))
+        self.channels = getChannels(path, elem.get("channels"), offset)
 
 
 def enumSourcesFile(sourcefile, filter=None, categories=False):
@@ -278,7 +271,13 @@ def enumSourcesFile(sourcefile, filter=None, categories=False):
             for event, elem in iterparse(file, events=("start", "end")):
                 if event == "end":
                     if elem.tag == "source":
-                        s = EPGSource(sourcefile, elem, category)
+                        # Calculate custom time offset in minutes
+                        try:
+                            offset = int(elem.get("offset", "+0000")) * 3600 // 100
+                        except ValueError:
+                            offset = 0  # Default offset if parsing fails
+
+                        s = EPGSource(sourcefile, elem, category, offset)
                         elem.clear()
                         if (filter is None) or (s.description in filter):
                             yield s
@@ -302,7 +301,7 @@ def enumSourcesFile(sourcefile, filter=None, categories=False):
                     if categories:
                         yield category
     except Exception as e:
-        print("[EPGImport] Error while parsing %s: %s" % (sourcefile, e))
+        print("[EPGImport] Error reading source file:", sourcefile, "Error:", e)
 
 
 def enumSources(path, filter=None, categories=False):
@@ -314,16 +313,16 @@ def enumSources(path, filter=None, categories=False):
                     for s in enumSourcesFile(sourcefile, filter, categories):
                         yield s
                 except Exception as e:
-                    log.write("[EPGImport] failed to open %s Error: %s" % (sourcefile, e))
+                    print("[EPGImport] failed to open", sourcefile, "Error:", e, file=log)
     except Exception as e:
-        log.write("[EPGImport] failed to list %s Error: %s" % (path, e))
+        print("[EPGImport] failed to list", path, "Error:", e, file=log)
 
 
 def loadUserSettings(filename=SETTINGS_FILE):
     try:
         return load(open(filename, "rb"))
     except Exception as e:
-        log.write("[EPGImport] No settings %s" % e)
+        print("[EPGImport]loadUserSettings No settings", e, file=log)
         return {"sources": []}
 
 
