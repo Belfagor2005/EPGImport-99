@@ -69,11 +69,7 @@ from . import filtersServices
 from . import log
 
 # Enigma2 Navigation
-try:
-    from NavigationInstance import NavigationInstance
-except ImportError:
-    # Fallback per nuovi Enigma2
-    import NavigationInstance
+import NavigationInstance
 
 
 try:
