@@ -38,7 +38,6 @@ from Components.Label import Label
 from Components.PluginComponent import plugins
 from Components.Sources.StaticText import StaticText
 
-from NavigationInstance import NavigationInstance
 from Plugins.Plugin import PluginDescriptor
 from Screens.ChoiceBox import ChoiceBox
 from Screens.LocationBox import LocationBox
@@ -59,7 +58,11 @@ from . import ExpandableSelectionList
 from . import filtersServices
 from . import log
 
-
+try:
+    from NavigationInstance import NavigationInstance
+except ImportError:
+    # Fallback per nuovi Enigma2
+    import NavigationInstance
 # global filterCustomChannel
 
 
