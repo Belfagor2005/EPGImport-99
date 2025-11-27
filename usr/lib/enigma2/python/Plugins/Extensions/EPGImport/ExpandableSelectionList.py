@@ -49,7 +49,7 @@ boxPythonMultiContent = eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST
 
 
 def category(description, isExpanded=False):
-    global cat_desc_loc, cat_icon_loc
+    global cat_icon_loc
     icon = expandedIcon if isExpanded else expandableIcon
     return [
         (description, isExpanded, []),
@@ -59,7 +59,6 @@ def category(description, isExpanded=False):
 
 
 def entry(description, value, selected):
-    global entry_desc_loc, entry_icon_loc
     res = [
         (description, value, selected),
         (eListboxPythonMultiContent.TYPE_TEXT,) + entry_desc_loc + (0, RT_HALIGN_LEFT, description)
