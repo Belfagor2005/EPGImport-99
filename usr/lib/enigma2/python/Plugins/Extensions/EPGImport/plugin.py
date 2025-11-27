@@ -77,6 +77,7 @@ try:
 except NameError:
     basestring = str
 
+
 def lastMACbyte():
     try:
         return int(open("/sys/class/net/eth0/address").readline().strip()[-2:], 16)
@@ -666,6 +667,7 @@ class EPGImportConfig(ConfigListScreen, Screen):
             text = self.importStatusTemplate % (src.description, epgimport.eventCount)
             self["status"].setText(text)
             return
+
         if lastImportResult and (lastImportResult != self.lastImportResult):
             start, count = lastImportResult
             try:
