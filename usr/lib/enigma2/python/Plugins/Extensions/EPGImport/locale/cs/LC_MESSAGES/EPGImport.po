@@ -19,16 +19,6 @@ msgstr ""
 "X-Generator: Poedit 3.5\n"
 
 #: ../plugin.py:739
-msgid ""
-"\n"
-"Import of epg data will start.\n"
-"This may take a few minutes.\n"
-"Is this ok?"
-msgstr ""
-"\n"
-"Spustí se import epg dat.\n"
-"To může trvat několik minut.\n"
-"Je to v pořádku?"
 
 #: ../plugin.py:739
 msgid " events\n"
@@ -75,8 +65,6 @@ msgid "Clearing current EPG before import"
 msgstr "Vymazání aktuálního EPG před importem"
 
 #: ../plugin.py:375
-msgid "Consider setting \"Days Profile\""
-msgstr "Zvažte nastavení \"Profil dnů\""
 
 #: ../plugin.py:650
 msgid "Days Profile"
@@ -113,32 +101,10 @@ msgid "EPG-Importer"
 msgstr "EPG-Importer"
 
 #: ../plugin.py:483
-msgid ""
-"EPGImport\n"
-"Import of epg data is still in progress. Please wait."
-msgstr ""
-"EPGImport\n"
-"Import dat epg stále probíhá. Počkejte prosím."
 
 #: ../plugin.py:498
-msgid ""
-"EPGImport\n"
-"Import of epg data will start.\n"
-"This may take a few minutes.\n"
-"Is this ok?"
-msgstr ""
-"EPGImport\n"
-"Spustí se import epg dat.\n"
-"To může trvat několik minut.\n"
-"Je to v pořádku?"
 
 #: ../plugin.py:507
-msgid ""
-"EPGImport Plugin\n"
-"Failed to start:\n"
-msgstr ""
-"EPGImport Plugin\n"
-"Nepodařilo se spustit:\n"
 
 #: ../plugin.py:105
 msgid "Friday"
@@ -154,12 +120,6 @@ msgstr "Import aktuálního zdroje"
 
 #: ../plugin.py:330
 #, python-format
-msgid ""
-"Importing: %s\n"
-"%s events"
-msgstr ""
-"Import: %s\n"
-"%s události"
 
 #: ../plugin.py:739
 msgid "Last import: "
@@ -284,20 +244,8 @@ msgid "Write to /tmp/epgimport.log"
 msgstr "Napište do /tmp/epgimport.log"
 
 #: ../plugin.py:660
-msgid ""
-"You may not use this settings!\n"
-"At least one day a week should be included!"
-msgstr ""
-"Toto nastavení nesmíte použít!\n"
-"Alespoň jeden den v týdnu by měl být zahrnut!"
 
 #: ../plugin.py:790
-msgid ""
-"You must restart Enigma2 to load the EPG data,\n"
-"is this OK?"
-msgstr ""
-"Musíte restartovat Enigma2 pro načtení dat EPG,\n"
-"je to v pořádku?"
 
 #: ../plugin.py:60
 msgid "always"

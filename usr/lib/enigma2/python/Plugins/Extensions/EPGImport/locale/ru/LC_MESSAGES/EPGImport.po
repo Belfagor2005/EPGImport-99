@@ -19,16 +19,6 @@ msgstr ""
 "X-Generator: Poedit 3.5\n"
 
 #: ../plugin.py:739
-msgid ""
-"\n"
-"Import of epg data will start.\n"
-"This may take a few minutes.\n"
-"Is this ok?"
-msgstr ""
-"\n"
-"Начнётся импорт epg данных.\n"
-"Это может занять несколько минут.\n"
-"Можем продолжить?"
 
 #: ../plugin.py:739
 msgid " events\n"
@@ -75,8 +65,6 @@ msgid "Clearing current EPG before import"
 msgstr "Очистить текущий EPG перед импортом"
 
 #: ../plugin.py:375
-msgid "Consider setting \"Days Profile\""
-msgstr "Учесть настройки \"Профиль Дней\""
 
 #: ../plugin.py:650
 msgid "Days Profile"
@@ -113,32 +101,10 @@ msgid "EPG-Importer"
 msgstr "EPG-Импортер"
 
 #: ../plugin.py:483
-msgid ""
-"EPGImport\n"
-"Import of epg data is still in progress. Please wait."
-msgstr ""
-"EPGИмпорт\n"
-"Импорт epg данных всё ещё продолжается. Пожалуйста, подождите."
 
 #: ../plugin.py:498
-msgid ""
-"EPGImport\n"
-"Import of epg data will start.\n"
-"This may take a few minutes.\n"
-"Is this ok?"
-msgstr ""
-"EPGИмпорт\n"
-"Начнётся импорт epg данных.\n"
-"Это может занять несколько минут.\n"
-"Согласны с этим?"
 
 #: ../plugin.py:507
-msgid ""
-"EPGImport Plugin\n"
-"Failed to start:\n"
-msgstr ""
-"EPGИмпорт Плагин\n"
-"Сбой запуска:\n"
 
 #: ../plugin.py:105
 msgid "Friday"
@@ -154,12 +120,6 @@ msgstr "Импорт текущего источника"
 
 #: ../plugin.py:330
 #, python-format
-msgid ""
-"Importing: %s\n"
-"%s events"
-msgstr ""
-"Импорт: %s\n"
-"%s события"
 
 #: ../plugin.py:739
 msgid "Last import: "
@@ -284,20 +244,8 @@ msgid "Write to /tmp/epgimport.log"
 msgstr "Запись в /tmp/epgimport.log"
 
 #: ../plugin.py:660
-msgid ""
-"You may not use this settings!\n"
-"At least one day a week should be included!"
-msgstr ""
-"Вы не можете использовать эти настройки!\n"
-"По крайней мере, один день в неделю должен быть включен!"
 
 #: ../plugin.py:790
-msgid ""
-"You must restart Enigma2 to load the EPG data,\n"
-"is this OK?"
-msgstr ""
-"Необходимо перезапустить Enigma2, чтобы загрузить данные EPG,\n"
-"согласны с ЭТИМ?"
 
 #: ../plugin.py:60
 msgid "always"

@@ -19,16 +19,6 @@ msgstr ""
 "X-Generator: Poedit 3.5\n"
 
 #: ../plugin.py:739
-msgid ""
-"\n"
-"Import of epg data will start.\n"
-"This may take a few minutes.\n"
-"Is this ok?"
-msgstr ""
-"\n"
-"Import danych EPG rozpocznie się.\n"
-"To może zająć chwile.\n"
-"Czy jest ok?"
 
 #: ../plugin.py:739
 msgid " events\n"
@@ -75,8 +65,6 @@ msgid "Clearing current EPG before import"
 msgstr "Wyczyść obecne EPG przed importem"
 
 #: ../plugin.py:375
-msgid "Consider setting \"Days Profile\""
-msgstr "Rozważyć ustawienie \"dni profil\""
 
 #: ../plugin.py:650
 msgid "Days Profile"
@@ -113,32 +101,10 @@ msgid "EPG-Importer"
 msgstr "EPG-Import"
 
 #: ../plugin.py:483
-msgid ""
-"EPGImport\n"
-"Import of epg data is still in progress. Please wait."
-msgstr ""
-"EPGImport\n"
-"Import danych EPG jest nadal w toku. Proszę czekać."
 
 #: ../plugin.py:498
-msgid ""
-"EPGImport\n"
-"Import of epg data will start.\n"
-"This may take a few minutes.\n"
-"Is this ok?"
-msgstr ""
-"EPGImport\n"
-"Import danych EPG zostanie uruchomiony.\n"
-"Może to potrwać kilka minut.\n"
-"Czy to w porządku?"
 
 #: ../plugin.py:507
-msgid ""
-"EPGImport Plugin\n"
-"Failed to start:\n"
-msgstr ""
-"Wtyczka EPGImport \n"
-"Nie udało się uruchomić\n"
 
 #: ../plugin.py:105
 msgid "Friday"
@@ -154,12 +120,6 @@ msgstr "Importuj bieżące źródło"
 
 #: ../plugin.py:330
 #, python-format
-msgid ""
-"Importing: %s\n"
-"%s events"
-msgstr ""
-"Importowanie: %s\\n \n"
-"%s zdarzeń"
 
 #: ../plugin.py:739
 msgid "Last import: "
@@ -284,20 +244,8 @@ msgid "Write to /tmp/epgimport.log"
 msgstr "Zapisz w /tmp/epgimport.log"
 
 #: ../plugin.py:660
-msgid ""
-"You may not use this settings!\n"
-"At least one day a week should be included!"
-msgstr ""
-"Nie możesz używać tych ustawień!\n"
-"Należy uwzględnić co najmniej jeden dzień w tygodniu!"
 
 #: ../plugin.py:790
-msgid ""
-"You must restart Enigma2 to load the EPG data,\n"
-"is this OK?"
-msgstr ""
-"Musisz ponownie uruchomić Enigma2, aby załadować dane EPG,\n"
-"czy to w porządku?"
 
 #: ../plugin.py:60
 msgid "always"

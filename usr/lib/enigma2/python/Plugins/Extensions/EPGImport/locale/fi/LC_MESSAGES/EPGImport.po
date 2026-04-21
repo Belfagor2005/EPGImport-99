@@ -155,32 +155,18 @@ msgstr "Lähteet"
 
 #: plugin.py:397
 #, python-format
-msgid ""
-"Filtering:\n"
-"%s Please wait!"
-msgstr ""
 
 #: plugin.py:398
 #, fuzzy, python-format
 #| msgid ""
 #| "Importing: %s\n"
 #| "%s events"
-msgid ""
-"Importing:\n"
-"%s %s events"
-msgstr ""
-"Lataa: %s\n"
-"%s events"
 
 #: plugin.py:438
 msgid "Automatic import EPG"
 msgstr "Automaattinen EPG lataus"
 
 #: plugin.py:438
-msgid ""
-"When enabled, it allows you to schedule an automatic EPG update at the given "
-"days and time."
-msgstr ""
 
 #: plugin.py:439
 msgid "Path DB EPG"
@@ -199,30 +185,18 @@ msgid "When in deep standby"
 msgstr "Virransäästötilassa lataus"
 
 #: plugin.py:441
-msgid ""
-"Choose the action to perform when the box is in deep standby and the "
-"automatic EPG update should normally start."
-msgstr ""
 
 #: plugin.py:442
 msgid "Return to deep standby after import"
 msgstr "Palaa virransäästötilaan latauksen jälkeen"
 
 #: plugin.py:442
-msgid ""
-"This will turn back waked up box into deep-standby after automatic EPG "
-"import."
-msgstr ""
 
 #: plugin.py:443
 msgid "Standby at startup"
 msgstr "Valmiustilassa lataus"
 
 #: plugin.py:443
-msgid ""
-"The waked up box will be turned into standby after automatic EPG import wake "
-"up."
-msgstr ""
 
 #: plugin.py:444
 msgid "Choice days for start import"
@@ -237,20 +211,12 @@ msgid "Start import after booting up"
 msgstr "Lataa uudelleenkäynnistyksen jälkeen"
 
 #: plugin.py:445
-msgid ""
-"Specify in which case the EPG must be automatically updated after the box "
-"has booted."
-msgstr ""
 
 #: plugin.py:446
 msgid "Load EPG only services in bouquets"
 msgstr "Lataa EPG vain suosikkilistojen kanaville"
 
 #: plugin.py:446
-msgid ""
-"To save memory you can decide to only load EPG data for the services that "
-"you have in your bouquet files."
-msgstr ""
 
 #: plugin.py:447
 msgid "Load EPG"
@@ -261,23 +227,14 @@ msgid "Select load EPG mode for services."
 msgstr ""
 
 #: plugin.py:448
-msgid "Consider setting \"Days Profile\""
-msgstr "Harkitse asetusta \"Valitse päivät\""
 
 #: plugin.py:448
-msgid ""
-"When you decide to import the EPG after the box booted mention if the \"days "
-"profile\" must be take into consideration or not."
-msgstr ""
 
 #: plugin.py:449
 msgid "Skip import on restart GUI"
 msgstr "Ohita lataus uudelleenkäynnistyksessä"
 
 #: plugin.py:449
-msgid ""
-"When you restart the GUI you can decide to skip or not the EPG data import."
-msgstr ""
 
 #: plugin.py:450
 #, fuzzy
@@ -286,10 +243,6 @@ msgid "Show \"EPG import now\" in extensions"
 msgstr "Näytä \"EPG:n lataus\" laajennusvalikossa"
 
 #: plugin.py:450
-msgid ""
-"Display a shortcut \"EPG import now\" in the extension menu. This menu entry "
-"will immediately start the EPG update process when selected."
-msgstr ""
 
 #: plugin.py:451
 #, fuzzy
@@ -298,65 +251,36 @@ msgid "Show \"EPG import\" in epg menu"
 msgstr "Näytä \"EPG:n lataus\" päävalikossa"
 
 #: plugin.py:451
-msgid ""
-"Display a shortcut \"EPG import\" in your STB epg menu screen. This allows "
-"you to access the configuration."
-msgstr ""
 
 #: plugin.py:452
 msgid "Load long descriptions up to X days"
 msgstr "Lataa ohjelmakuvaukset X päivälle"
 
 #: plugin.py:452
-msgid ""
-"Define the number of days that you want to get the full EPG data, reducing "
-"this number can help you to save memory usage on your box. But you are also "
-"limited with the EPG provider available data. You will not have 15 days EPG "
-"if it only provide 7 days data."
-msgstr ""
 
 #: plugin.py:453
 msgid "Run AutoTimer after import"
 msgstr "Käynnistä automaattiajastusten haku latauksen jälkeen"
 
 #: plugin.py:453
-msgid ""
-"You can start automatically the plugin AutoTimer after the EPG data update "
-"to have it refreshing its scheduling after EPG data refresh."
-msgstr ""
 
 #: plugin.py:454
 msgid "Clearing current EPG before import"
 msgstr "Tyhjennä nykyinen EPG ennen latausta"
 
 #: plugin.py:454
-msgid ""
-"This will clear the current EPG data in memory before updating the EPG data. "
-"This allows you to always have a clean new EPG with the latest EPG data, for "
-"example in case of program changes between refresh, otherwise EPG data are "
-"cumulative."
-msgstr ""
 
 #: plugin.py:455
 msgid "Also apply \"channel id\" filtering on custom.channels.xml"
 msgstr ""
 
 #: plugin.py:455
-msgid ""
-"This is for advanced users that are using the channel id filtering feature. "
-"If enabled, the filter rules defined into /etc/epgimport/channel_id_filter."
-"conf will also be applied on your /etc/epgimport/custom.channels.xml file."
-msgstr ""
 
 #: plugin.py:456
 msgid "Execute shell command before import EPG"
 msgstr ""
 
 #: plugin.py:456
-msgid ""
-"When enabled, then you can run the desired script before starting the "
-"import, after which the import of the EPG will begin."
-msgstr ""
 
 #: plugin.py:457
 msgid "Shell command name"
@@ -383,10 +307,6 @@ msgid "Hours after which the import is repeated"
 msgstr ""
 
 #: plugin.py:459
-msgid ""
-"Number of hours (1-23, or 0 for no repeat) after which the import is "
-"repeated. This value is not saved and will be reset when the GUI restarts."
-msgstr ""
 
 #: plugin.py:538
 msgid "Settings saved successfully !"
@@ -414,36 +334,14 @@ msgid "Last: %s %s, %d events"
 msgstr "Ladattu: %s %s, %d tapahtumaa"
 
 #: plugin.py:658
-msgid ""
-"EPGImport\n"
-"Import of epg data is still in progress. Please wait."
-msgstr ""
-"EPG:n lataus\n"
-"EPG:n lataus käynnissä. Odota."
 
 #: plugin.py:669
 msgid "No active EPG sources found, nothing to do"
 msgstr "Ei löytynyt aktiivisia EPG lähteitä"
 
 #: plugin.py:673
-msgid ""
-"EPGImport\n"
-"Import of epg data will start.\n"
-"This may take a few minutes.\n"
-"Is this ok?"
-msgstr ""
-"EPG:n lataus\n"
-"EPG:n lataus alkaa.\n"
-"Tämä voi kestää muutaman minuutin.\n"
-"Onko tämä OK?"
 
 #: plugin.py:685
-msgid ""
-"EPGImport Plugin\n"
-"Failed to start:\n"
-msgstr ""
-"EPG lataus\n"
-" Käynnistys epäonnistui:\n"
 
 #: plugin.py:701
 msgid "Show log"
@@ -464,11 +362,6 @@ msgid "EPG Import Sources"
 msgstr "Lähteet"
 
 #: plugin.py:801
-msgid ""
-"Do you want to update Source now?\n"
-"\n"
-"Wait for the import successful message!"
-msgstr ""
 
 #: plugin.py:830
 msgid "Source files Imported and List Updated!"
@@ -488,12 +381,6 @@ msgid "Days Profile"
 msgstr "Valitse päivät"
 
 #: plugin.py:1020
-msgid ""
-"You may not use this settings!\n"
-"At least one day a week should be included!"
-msgstr ""
-"Et voi käyttää tätä asetusta!\n"
-"Vähintään yksi päivä pitää valita!"
 
 #: plugin.py:1069
 msgid "Clear"
@@ -518,16 +405,6 @@ msgid " events\n"
 msgstr " tapahtumia\n"
 
 #: plugin.py:1122
-msgid ""
-"\n"
-"Import of epg data will start.\n"
-"This may take a few minutes.\n"
-"Is this ok?"
-msgstr ""
-"\n"
-"EPG-tietojen lataus alkaa.\n"
-"Tämä voi kestää muutaman minuutin.\n"
-"Onko tämä OK?"
 
 #: plugin.py:1170
 #, python-format
@@ -535,12 +412,6 @@ msgid "EPG Import finished, %d events"
 msgstr "Lataus valmis, %d tapahtumaa"
 
 #: plugin.py:1170
-msgid ""
-"You must restart Enigma2 to load the EPG data,\n"
-"is this OK?"
-msgstr ""
-"Enigma2 on uudelleenkäynnistettävä,\n"
-" OK?"
 
 #: plugin.py:1311
 msgid "No source file found !"

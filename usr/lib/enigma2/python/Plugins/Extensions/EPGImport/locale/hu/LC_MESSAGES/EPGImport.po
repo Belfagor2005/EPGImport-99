@@ -19,16 +19,6 @@ msgstr ""
 "X-Generator: Poedit 3.5\n"
 
 #: ../plugin.py:739
-msgid ""
-"\n"
-"Import of epg data will start.\n"
-"This may take a few minutes.\n"
-"Is this ok?"
-msgstr ""
-"\n"
-"Az epg adatok importálása megkezdődik.\n"
-"Ez néhány percet vesz igénybe.\n"
-"Kezdődhet az importálás?"
 
 #: ../plugin.py:739
 msgid " events\n"
@@ -75,8 +65,6 @@ msgid "Clearing current EPG before import"
 msgstr "Az aktuális EPG törlése importálás előtt"
 
 #: ../plugin.py:375
-msgid "Consider setting \"Days Profile\""
-msgstr "Legyen beállítva a \"Napi profil\""
 
 #: ../plugin.py:650
 msgid "Days Profile"
@@ -113,32 +101,10 @@ msgid "EPG-Importer"
 msgstr "EPGImport"
 
 #: ../plugin.py:483
-msgid ""
-"EPGImport\n"
-"Import of epg data is still in progress. Please wait."
-msgstr ""
-"EPGImport\n"
-"Az epg adatok importálása még folyamatban van. Kérlek várj."
 
 #: ../plugin.py:498
-msgid ""
-"EPGImport\n"
-"Import of epg data will start.\n"
-"This may take a few minutes.\n"
-"Is this ok?"
-msgstr ""
-"EPGImport\n"
-"Az EPG adatok importálása megkezdődik.\n"
-"Ez néhány percet vesz igénybe.\n"
-"Kezdődhet az importálás?"
 
 #: ../plugin.py:507
-msgid ""
-"EPGImport Plugin\n"
-"Failed to start:\n"
-msgstr ""
-"EPGImport bővítmény\n"
-"Nem sikerült elindítani:\n"
 
 #: ../plugin.py:105
 msgid "Friday"
@@ -154,12 +120,6 @@ msgstr "Jelenlegi forrás importálása"
 
 #: ../plugin.py:330
 #, python-format
-msgid ""
-"Importing: %s\n"
-"%s events"
-msgstr ""
-"Importálás: %s\n"
-"%s műsor információ"
 
 #: ../plugin.py:739
 msgid "Last import: "
@@ -284,20 +244,8 @@ msgid "Write to /tmp/epgimport.log"
 msgstr "Írás a /tmp/epgimport.log fájlba"
 
 #: ../plugin.py:660
-msgid ""
-"You may not use this settings!\n"
-"At least one day a week should be included!"
-msgstr ""
-"Nem használhatja ezeket a beállításokat!\n"
-"Legalább a hét egy napját ki kell választani!"
 
 #: ../plugin.py:790
-msgid ""
-"You must restart Enigma2 to load the EPG data,\n"
-"is this OK?"
-msgstr ""
-"Az EPG adatok betöltéséhez újra kell indítania az Enigma2-t,\n"
-"Rendben van ez így?"
 
 #: ../plugin.py:60
 msgid "always"
