@@ -120,7 +120,7 @@ def main(url, removeExisting=True):
     if PYTHON3 and SSL_AVAILABLE:
         try:
             context = ssl._create_unverified_context()
-        except:
+        except BaseException:
             context = None
             print("SSL context creation failed, proceeding without")
 

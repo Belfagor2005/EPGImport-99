@@ -24,7 +24,8 @@ def quickptime(date_str):
             0,                      # Second (set to 0)
             -1,                     # Weekday (set to -1 as unknown)
             -1,                     # Julian day (set to -1 as unknown)
-            0                       # DST (Daylight Saving Time, set to 0 as unknown)
+            # DST (Daylight Saving Time, set to 0 as unknown)
+            0
         )
     )
 
@@ -42,11 +43,13 @@ def get_time_utc(timestring, fdateparse):
         values = timestring.split(" ")
         tm = fdateparse(values[0])
         time_gm = timegm(tm)
-        # suppose file says +0300 => that means we have to substract 3 hours from localtime to get GMT
+        # suppose file says +0300 => that means we have to substract 3 hours
+        # from localtime to get GMT
         if len(values) > 1:
             timezone_offset_str = values[1]  # +0100
             # Extract the numeric part of the time zone
-            timezone_offset = int(timezone_offset_str[:3])  # Extract the first 3 characters (+01)
+            # Extract the first 3 characters (+01)
+            timezone_offset = int(timezone_offset_str[:3])
             time_gm -= (timezone_offset * 3600)
         return time_gm
     except Exception as e:
@@ -204,7 +207,12 @@ def enumerateProgrammes(fp):
 
 
 class XMLTVConverter:
-    def __init__(self, channels_dict, category_dict, dateformat="%Y%m%d%H%M%S %Z", offset=0):
+    def __init__(
+            self,
+            channels_dict,
+            category_dict,
+            dateformat="%Y%m%d%H%M%S %Z",
+            offset=0):
         self.channels = channels_dict
         self.categories = category_dict
         if dateformat.startswith("%Y%m%d%H%M%S"):
@@ -242,9 +250,11 @@ class XMLTVConverter:
                 start = get_time_utc(elem.get("start"), self.dateParser)
                 stop = get_time_utc(elem.get("stop"), self.dateParser)
 
-                # Ensure start and stop are not None before performing any operations
+                # Ensure start and stop are not None before performing any
+                # operations
                 if start is None or stop is None:
-                    print("[XMLTVConverter] Invalid start/stop time: start={}, stop={}".format(start, stop), file=log)
+                    print(
+                        "[XMLTVConverter] Invalid start/stop time: start={}, stop={}".format(start, stop), file=log)
                     continue  # Skip this entry if start/stop are None
 
                 start += self.offset
@@ -253,32 +263,40 @@ class XMLTVConverter:
                 title = get_xml_string(elem, "title")
 
                 try:  # Adding map with language
-                    lang_code = get_xml_language(elem, "title") or get_xml_language(elem, "desc") or "eng"
+                    lang_code = get_xml_language(
+                        elem, "title") or get_xml_language(
+                        elem, "desc") or "eng"
                     language = [(lang_code, int(lang_code) - 3)]
-                except:
+                except BaseException:
                     language = None
 
                 # Ensure start and stop are integers
                 if not isinstance(start, int) or not isinstance(stop, int):
-                    print("[XMLTVConverter] Invalid start/stop time format: start={}, stop={}".format(start, stop), file=log)
+                    print(
+                        "[XMLTVConverter] Invalid start/stop time format: start={}, stop={}".format(
+                            start, stop), file=log)
                     continue  # Skip this entry if start/stop are not integers
 
                 # Check duration to ensure it's a number
                 duration = stop - start
                 if not isinstance(duration, int):
-                    print("[XMLTVConverter] Invalid duration format: {}".format(duration), file=log)
+                    print(
+                        "[XMLTVConverter] Invalid duration format: {}".format(duration),
+                        file=log)
                     continue  # Skip this entry if duration is not an integer
 
-                # Try/except for EPG XML files with program entries containing <sub-title ... />
+                # Try/except for EPG XML files with program entries containing
+                # <sub-title ... />
                 try:
                     subtitle = get_xml_string(elem, "sub-title")
-                except:
+                except BaseException:
                     subtitle = ""
 
-                # Try/except for EPG XML files with program entries containing <desc ... />
+                # Try/except for EPG XML files with program entries containing
+                # <desc ... />
                 try:
                     description = get_xml_string(elem, "desc")
-                except:
+                except BaseException:
                     description = ""
                 category = get_xml_string(elem, "category")
                 if not category:  # Check if category is empty
@@ -288,13 +306,15 @@ class XMLTVConverter:
                 try:
                     rating_str = get_xml_rating_string(elem)
                     # hardcode country as ENG since there is no handling for parental certification systems per country yet
-                    # also we support currently only number like values like "12+" since the epgcache works only with bytes right now
+                    # also we support currently only number like values like
+                    # "12+" since the epgcache works only with bytes right now
                     rating = [("eng", int(rating_str) - 3)]
-                except:
+                except BaseException:
                     rating = None
 
                 if not stop or not start or (stop <= start):
-                    print("[XMLTVConverter] Bad start/stop time: {} ({}) - {} ({}) [{}]".format(elem.get("start"), start, elem.get("stop"), stop, title), file=log)
+                    print("[XMLTVConverter] Bad start/stop time: {} ({}) - {} ({}) [{}]".format(
+                        elem.get("start"), start, elem.get("stop"), stop, title), file=log)
 
                 if rating:
                     yield (services, (start, stop - start, title, subtitle, description, cat_nr, 0, rating))
@@ -313,9 +333,11 @@ class XMLTVConverter:
             category = category.strip()
             category_value = self.categories.get(category)
             if category_value is not None:
-                if isinstance(category_value, (tuple, list)) and len(category_value) >= 2:
+                if isinstance(category_value, (tuple, list)
+                              ) and len(category_value) >= 2:
                     if duration > 60 * category_value[1]:
                         return category_value[0]
                 else:
-                    return category_value if not isinstance(category_value, (tuple, list)) else category_value[0]
+                    return category_value if not isinstance(
+                        category_value, (tuple, list)) else category_value[0]
         return 0

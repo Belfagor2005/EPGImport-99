@@ -8,15 +8,21 @@ PluginLanguagePath = "Extensions/EPGImport/locale"
 
 
 def localeInit():
-	bindtextdomain(PluginLanguageDomain, resolveFilename(SCOPE_PLUGINS, PluginLanguagePath))
+    bindtextdomain(
+        PluginLanguageDomain,
+        resolveFilename(
+            SCOPE_PLUGINS,
+            PluginLanguagePath))
 
 
 def _(txt):
-	if dgettext(PluginLanguageDomain, txt):
-		return dgettext(PluginLanguageDomain, txt)
-	else:
-		print("%s fallback to default translation for %s" % (PluginLanguageDomain, txt))
-		return gettext(txt)
+    if dgettext(PluginLanguageDomain, txt):
+        return dgettext(PluginLanguageDomain, txt)
+    else:
+        print(
+            "%s fallback to default translation for %s" %
+            (PluginLanguageDomain, txt))
+        return gettext(txt)
 
 
 localeInit()

@@ -10,9 +10,9 @@ from __future__ import absolute_import
 import sys
 import threading
 try:  # python2 only
-	from cStringIO import StringIO
-except:	 # both python2 and python3
-	from io import StringIO
+    from cStringIO import StringIO
+except BaseException:     # both python2 and python3
+    from io import StringIO
 
 
 logfile = StringIO()
@@ -21,24 +21,24 @@ mutex = threading.Lock()
 
 
 def write(data):
-	mutex.acquire()
-	try:
-		if logfile.tell() > 20000:
-			# Do a sort of 8k round robin
-			logfile.seek(0)
-		logfile.write(data)
-	finally:
-		mutex.release()
-	sys.stdout.write(data)
+    mutex.acquire()
+    try:
+        if logfile.tell() > 20000:
+            # Do a sort of 8k round robin
+            logfile.seek(0)
+        logfile.write(data)
+    finally:
+        mutex.release()
+    sys.stdout.write(data)
 
 
 def getvalue():
-	mutex.acquire()
-	try:
-		pos = logfile.tell()
-		head = logfile.read()
-		logfile.seek(0)
-		tail = logfile.read(pos)
-	finally:
-		mutex.release()
-	return head + tail
+    mutex.acquire()
+    try:
+        pos = logfile.tell()
+        head = logfile.read()
+        logfile.seek(0)
+        tail = logfile.read(pos)
+    finally:
+        mutex.release()
+    return head + tail

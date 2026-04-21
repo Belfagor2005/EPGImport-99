@@ -50,18 +50,26 @@ boxPythonMultiContent = eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST
 
 def category(description, isExpanded=False):
     icon = expandedIcon if isExpanded else expandableIcon
-    return [
-        (description, isExpanded, []),
-        (eListboxPythonMultiContent.TYPE_TEXT,) + cat_desc_loc + (0, RT_HALIGN_LEFT, description),
-        (boxPythonMultiContent,) + cat_icon_loc + (icon,)
-    ]
+    return [(description,
+             isExpanded,
+             []),
+            (eListboxPythonMultiContent.TYPE_TEXT,
+             ) + cat_desc_loc + (0,
+                                 RT_HALIGN_LEFT,
+                                 description),
+            (boxPythonMultiContent,
+             ) + cat_icon_loc + (icon,
+                                 )]
 
 
 def entry(description, value, selected):
-    res = [
-        (description, value, selected),
-        (eListboxPythonMultiContent.TYPE_TEXT,) + entry_desc_loc + (0, RT_HALIGN_LEFT, description)
-    ]
+    res = [(description,
+            value,
+            selected),
+           (eListboxPythonMultiContent.TYPE_TEXT,
+            ) + entry_desc_loc + (0,
+                                  RT_HALIGN_LEFT,
+                                  description)]
     if selected:
         selectionpng = lock_on
         res.append((boxPythonMultiContent,) + entry_icon_loc + (selectionpng,))
@@ -98,7 +106,11 @@ def isCategory(item):
 class ExpandableSelectionList(MenuList):
     def __init__(self, tree=None, enableWrapAround=False):
         "tree is expected to be a list of categories"
-        MenuList.__init__(self, [], enableWrapAround, content=eListboxPythonMultiContent)
+        MenuList.__init__(
+            self,
+            [],
+            enableWrapAround,
+            content=eListboxPythonMultiContent)
 
         if WQHD:
             font = ("Regular", 48, 70)  # Altezza riga: 70

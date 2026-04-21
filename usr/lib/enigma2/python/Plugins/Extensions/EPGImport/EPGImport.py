@@ -36,7 +36,8 @@ try:
 except NameError:
     basestring = str
 
-packages.urllib3.disable_warnings(packages.urllib3.exceptions.InsecureRequestWarning)
+packages.urllib3.disable_warnings(
+    packages.urllib3.exceptions.InsecureRequestWarning)
 # Used to check server validity
 HDD_EPG_DAT = "/hdd/epg.dat"
 if config.misc.epgcache_filename.value:
@@ -46,14 +47,27 @@ else:
 PARSERS = {"xmltv": "gen_xmltv", "genxmltv": "gen_xmltv"}
 
 
-def threadGetPage(url=None, file=None, urlheaders=None, success=None, fail=None, *args, **kwargs):
+def threadGetPage(
+        url=None,
+        file=None,
+        urlheaders=None,
+        success=None,
+        fail=None,
+        *args,
+        **kwargs):
     # print("[EPGImport][threadGetPage] url, file, args, kwargs", url, "   ", file, "   ", args, "   ", kwargs)
     try:
         s = Session()
         s.headers = {}
-        response = s.get(url, verify=False, headers=urlheaders, timeout=15, allow_redirects=True)
+        response = s.get(
+            url,
+            verify=False,
+            headers=urlheaders,
+            timeout=15,
+            allow_redirects=True)
         response.raise_for_status()
-        # check here for content-disposition header so to extract the actual filename (if the url doesnt contain it)
+        # check here for content-disposition header so to extract the actual
+        # filename (if the url doesnt contain it)
         content_disp = response.headers.get("Content-Disposition", "")
         filename = content_disp.split('filename="')[-1].split('"')[0]
         ext = splitext(file)[1]
@@ -107,7 +121,8 @@ def getTimeFromHourAndMinutes(hour, minute):
     # Get the current local time
     now = localtime()
 
-    # Calculate the timestamp for the specified time (today with the given hour and minute)
+    # Calculate the timestamp for the specified time (today with the given
+    # hour and minute)
     begin = int(mktime((
         now.tm_year,     # Current year
         now.tm_mon,      # Current month
@@ -144,9 +159,12 @@ def bigStorage(minFree, default, *candidates):
                 if free > minFree:
                     return candidate
             except Exception as e:
-                print("[EPGImport][bigStorage] Failed to stat %s:" % default, e)
+                print(
+                    "[EPGImport][bigStorage] Failed to stat %s:" %
+                    default, e)
                 continue
-    raise Exception("[EPGImport][bigStorage] Insufficient storage for download")
+    raise Exception(
+        "[EPGImport][bigStorage] Insufficient storage for download")
 
 
 class OudeisImporter:
@@ -165,14 +183,17 @@ class OudeisImporter:
             except Exception as e:
                 import traceback
                 traceback.print_exc()
-                print("[EPGImport][OudeisImporter][importEvents] ### importEvents exception:", e)
+                print(
+                    "[EPGImport][OudeisImporter][importEvents] ### importEvents exception:", e)
 
 
 def unlink_if_exists(filename):
     try:
         unlink(filename)
     except Exception as e:
-        print("[EPGImport] warning: Could not remove '%s' intermediate" % filename, repr(e))
+        print(
+            "[EPGImport] warning: Could not remove '%s' intermediate" %
+            filename, repr(e))
 
 
 class EPGImport:
@@ -221,11 +242,13 @@ class EPGImport:
 
         self.source = self.sources.pop()
 
-        print("[EPGImport][nextImport], source=", self.source.description, file=log)
+        print("[EPGImport][nextImport], source=",
+              self.source.description, file=log)
         self.fetchUrl(self.source.url)
 
     def fetchUrl(self, filename):
-        if filename.startswith("http:") or filename.startswith("https:") or filename.startswith("ftp:"):
+        if filename.startswith("http:") or filename.startswith(
+                "https:") or filename.startswith("ftp:"):
             self.urlDownload(filename, self.afterDownload, self.downloadFail)
         else:
             self.afterDownload(filename, deleteFile=False)
@@ -243,7 +266,8 @@ class EPGImport:
 
         # print("[EPGImport][urlDownload]2 check_mount ", check_mount)
         pathDefault = media_path if check_mount else "/tmp"
-        path = bigStorage(9000000, pathDefault, "/media/usb", "/media/cf")  # lets use HDD and flash as main backup media
+        # lets use HDD and flash as main backup media
+        path = bigStorage(9000000, pathDefault, "/media/usb", "/media/cf")
         filename = join(path, host)
         ext = splitext(sourcefile)[1]
         # Keep sensible extension, in particular the compression type
@@ -255,8 +279,18 @@ class EPGImport:
             "Accept": "*/*",
             "Connection": "keep-alive"}
 
-        print("[EPGImport][urlDownload] Downloading: " + str(sourcefile) + " to local path: " + str(filename))
-        callInThread(threadGetPage, url=sourcefile, file=filename, urlheaders=Headers, success=afterDownload, fail=downloadFail)
+        print(
+            "[EPGImport][urlDownload] Downloading: " +
+            str(sourcefile) +
+            " to local path: " +
+            str(filename))
+        callInThread(
+            threadGetPage,
+            url=sourcefile,
+            file=filename,
+            urlheaders=Headers,
+            success=afterDownload,
+            fail=downloadFail)
 
     def afterDownload(self, filename, deleteFile=False):
         # print("[EPGImport][afterDownload]filename", filename)
@@ -273,8 +307,12 @@ class EPGImport:
 
         if self.source.parser == "epg.dat":
             if twisted.python.runtime.platform.supportsThreads():
-                print("[EPGImport][afterDownload] Using twisted thread for DAT file", file=log)
-                threads.deferToThread(self.readEpgDatFile, filename, deleteFile).addCallback(lambda ignore: self.nextImport())
+                print(
+                    "[EPGImport][afterDownload] Using twisted thread for DAT file",
+                    file=log)
+                threads.deferToThread(
+                    self.readEpgDatFile, filename, deleteFile).addCallback(
+                    lambda ignore: self.nextImport())
             else:
                 self.readEpgDatFile(filename, deleteFile)
                 return
@@ -285,12 +323,17 @@ class EPGImport:
                 self.fd.read(10)
                 self.fd.seek(0, 0)
             except gzip.BadGzipFile as e:
-                print("[EPGImport][afterDownload] File downloaded is not a valid gzip file", filename, file=log)
+                print(
+                    "[EPGImport][afterDownload] File downloaded is not a valid gzip file",
+                    filename,
+                    file=log)
                 try:
                     print("[EPGImport][afterDownload] unlink", filename)
                     unlink_if_exists(filename)
                 except Exception as e:
-                    print("[EPGImport][afterDownload] warning: Could not remove '%s' intermediate" % filename, str(e))
+                    print(
+                        "[EPGImport][afterDownload] warning: Could not remove '%s' intermediate" %
+                        filename, str(e))
                 self.downloadFail(e)
                 return
 
@@ -300,12 +343,17 @@ class EPGImport:
                 self.fd.read(10)
                 self.fd.seek(0, 0)
             except lzma.LZMAError as e:
-                print("[EPGImport][afterDownload] File downloaded is not a valid xz file", filename, file=log)
+                print(
+                    "[EPGImport][afterDownload] File downloaded is not a valid xz file",
+                    filename,
+                    file=log)
                 try:
                     print("[EPGImport][afterDownload] unlink", filename)
                     unlink_if_exists(filename)
                 except Exception as e:
-                    print("[EPGImport][afterDownload] warning: Could not remove '%s' intermediate" % filename, e)
+                    print(
+                        "[EPGImport][afterDownload] warning: Could not remove '%s' intermediate" %
+                        filename, e)
                 self.downloadFail(e)
                 return
 
@@ -317,7 +365,9 @@ class EPGImport:
                 print("[EPGImport][afterDownload] unlink", filename, file=log)
                 unlink_if_exists(filename)
             except Exception as e:
-                print("[EPGImport][afterDownload] warning: Could not remove '%s' intermediate" % filename, e, file=log)
+                print(
+                    "[EPGImport][afterDownload] warning: Could not remove '%s' intermediate" %
+                    filename, e, file=log)
 
         self.channelFiles = self.source.channels.downloadables()
         if not self.channelFiles:
@@ -325,7 +375,10 @@ class EPGImport:
         else:
             filename = choice(self.channelFiles)
             self.channelFiles.remove(filename)
-            self.urlDownload(filename, self.afterChannelDownload, self.channelDownloadFail)
+            self.urlDownload(
+                filename,
+                self.afterChannelDownload,
+                self.channelDownloadFail)
         return
 
     def downloadFail(self, failure):
@@ -333,9 +386,13 @@ class EPGImport:
         if self.source.url in self.source.urls:
             self.source.urls.remove(self.source.url)
         if self.source.urls:
-            print("[EPGImport][downloadFail] Attempting alternative URL", file=log)
+            print(
+                "[EPGImport][downloadFail] Attempting alternative URL",
+                file=log)
             self.source.url = choice(self.source.urls)
-            print("[EPGImport][downloadFail] try alternative download url", self.source.url)
+            print(
+                "[EPGImport][downloadFail] try alternative download url",
+                self.source.url)
             self.fetchUrl(self.source.url)
         else:
             self.nextImport()
@@ -346,12 +403,19 @@ class EPGImport:
                 if not getsize(filename):
                     raise Exception("File is empty")
             except Exception as e:
-                print("[EPGImport][afterChannelDownload] Exception filename", filename)
+                print(
+                    "[EPGImport][afterChannelDownload] Exception filename",
+                    filename)
                 self.channelDownloadFail(e)
                 return
         if twisted.python.runtime.platform.supportsThreads():
-            print("[EPGImport][afterChannelDownload] Using twisted thread", file=log)
-            threads.deferToThread(self.doThreadRead, filename).addCallback(lambda ignore: self.nextImport())
+            print(
+                "[EPGImport][afterChannelDownload] Using twisted thread",
+                file=log)
+            threads.deferToThread(
+                self.doThreadRead,
+                filename).addCallback(
+                lambda ignore: self.nextImport())
             deleteFile = False  # Thread will delete it
         else:
             self.iterator = self.createIterator(filename)
@@ -360,34 +424,53 @@ class EPGImport:
             try:
                 unlink_if_exists(filename)
             except Exception as e:
-                print("[EPGImport][afterChannelDownload] warning: Could not remove '%s' intermediate" % filename, e, file=log)
+                print(
+                    "[EPGImport][afterChannelDownload] warning: Could not remove '%s' intermediate" %
+                    filename, e, file=log)
 
     def channelDownloadFail(self, failure):
-        print("[EPGImport][channelDownloadFail] download channel failed:", failure, file=log)
+        print(
+            "[EPGImport][channelDownloadFail] download channel failed:",
+            failure,
+            file=log)
         if self.channelFiles:
             filename = choice(self.channelFiles)
             if filename in self.channelFiles:
                 self.channelFiles.remove(filename)
-            self.urlDownload(filename, self.afterChannelDownload, self.channelDownloadFail)
+            self.urlDownload(
+                filename,
+                self.afterChannelDownload,
+                self.channelDownloadFail)
         else:
-            print("[EPGImport][channelDownloadFail] no more alternatives for channels", file=log)
+            print(
+                "[EPGImport][channelDownloadFail] no more alternatives for channels",
+                file=log)
             self.nextImport()
 
     def createIterator(self, filename):
         # print("[EPGImport][createIterator], filename", filename)
         self.source.channels.update(self.channelFilter, filename)
-        return getParser(self.source.parser).iterator(self.fd, self.source.channels.items, self.source.offset)
+        return getParser(
+            self.source.parser).iterator(
+            self.fd,
+            self.source.channels.items,
+            self.source.offset)
 
     def readEpgDatFile(self, filename, deleteFile=False):
         if not hasattr(self.epgcache, "load"):
-            print("[EPGImport][readEpgDatFile] Cannot load EPG.DAT files on unpatched enigma. Need CrossEPG patch.", file=log)
+            print(
+                "[EPGImport][readEpgDatFile] Cannot load EPG.DAT files on unpatched enigma. Need CrossEPG patch.",
+                file=log)
             return
 
         unlink_if_exists(HDD_EPG_DAT)
 
         try:
             if filename.endswith(".gz"):
-                print("[EPGImport][readEpgDatFile] Uncompressing", filename, file=log)
+                print(
+                    "[EPGImport][readEpgDatFile] Uncompressing",
+                    filename,
+                    file=log)
                 from shutil import copyfileobj
                 fd = gzip.open(filename, "rb")
                 epgdat = open(HDD_EPG_DAT, "wb")
@@ -399,13 +482,18 @@ class EPGImport:
             elif filename != HDD_EPG_DAT:
                 symlink(filename, HDD_EPG_DAT)
 
-            print("[EPGImport][readEpgDatFile] Importing", HDD_EPG_DAT, file=log)
+            print(
+                "[EPGImport][readEpgDatFile] Importing",
+                HDD_EPG_DAT,
+                file=log)
             self.epgcache.load()
 
             if deleteFile:
                 unlink_if_exists(filename)
         except Exception as e:
-            print("[EPGImport][readEpgDatFile] Failed to import %s:" % filename, e, file=log)
+            print(
+                "[EPGImport][readEpgDatFile] Failed to import %s:" %
+                filename, e, file=log)
 
     def fileno(self):
         if self.fd is not None:
@@ -448,7 +536,9 @@ class EPGImport:
                 try:
                     unlink_if_exists(filename)
                 except Exception as e:
-                    print("warning: Could not remove '{}' intermediate {}".format(filename, e))
+                    print(
+                        "warning: Could not remove '{}' intermediate {}".format(
+                            filename, e))
 
             print("### thread is ready ### Events: {}".format(self.eventCount))
             return
@@ -474,7 +564,10 @@ class EPGImport:
                         d = d[:4] + ("",) + d[5:]
                     self.storage.importEvents(r, (d,))
                 except Exception as e:
-                    print("[EPGImport][doRead] importEvents exception:", e, file=log)
+                    print(
+                        "[EPGImport][doRead] importEvents exception:",
+                        e,
+                        file=log)
         except StopIteration:
             self.nextImport()
         return
@@ -508,7 +601,9 @@ class EPGImport:
             reboot = False
             if self.eventCount:
                 if needLoad:
-                    print("[EPGImport] no Oudeis patch, load(%s) required" % needLoad, file=log)
+                    print(
+                        "[EPGImport] no Oudeis patch, load(%s) required" %
+                        needLoad, file=log)
                     reboot = True
                     try:
                         if hasattr(self.epgcache, "load"):

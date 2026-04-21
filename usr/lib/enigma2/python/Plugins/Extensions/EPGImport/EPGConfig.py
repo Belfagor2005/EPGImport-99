@@ -26,7 +26,11 @@ channelCache = {}
 global filterCustomChannel
 
 # Verify that the epgimport configuration is defined
-if hasattr(config.plugins, "epgimport") and hasattr(config.plugins.epgimport, "filter_custom_channel"):
+if hasattr(
+        config.plugins,
+        "epgimport") and hasattr(
+            config.plugins.epgimport,
+        "filter_custom_channel"):
     filterCustomChannel = config.plugins.epgimport.filter_custom_channel.value
 else:
     filterCustomChannel = False  # Fallback is not defined
@@ -50,7 +54,9 @@ def getChannels(path, name, offset):
     if name:
         channelfile = join(dirname, name) if isLocalFile(name) else name
     else:
-        channelfile = join(dirname, filename.split(".", 1)[0] + ".channels.xml")
+        channelfile = join(
+            dirname, filename.split(
+                ".", 1)[0] + ".channels.xml")
     try:
         return channelCache[channelfile]
     except KeyError:
@@ -106,38 +112,56 @@ def set_channel_id_filter():
                 # Skipping comments in channel_id_filter.conf
                 if not channel_id_line.startswith("#"):
                     clean_channel_id_line = channel_id_line.strip()
-                    # Blank line in channel_id_filter.conf will produce a full match so we need to skip them.
+                    # Blank line in channel_id_filter.conf will produce a full
+                    # match so we need to skip them.
                     if clean_channel_id_line:
                         try:
-                            # We compile individually every line just to report error
+                            # We compile individually every line just to report
+                            # error
                             full_filter = compile(clean_channel_id_line)
-                        except:
-                            print("[EPGImport] ERROR: " + clean_channel_id_line + " is not a valid regex. It will be ignored.", file=log)
+                        except BaseException:
+                            print(
+                                "[EPGImport] ERROR: " +
+                                clean_channel_id_line +
+                                " is not a valid regex. It will be ignored.",
+                                file=log)
                         else:
                             full_filter = full_filter + clean_channel_id_line + "|"
     except IOError:
         print("[EPGImport] INFO: no channel_id_filter.conf file found.", file=log)
-        # Return a dummy filter (empty line filter) all accepted except empty channel id
+        # Return a dummy filter (empty line filter) all accepted except empty
+        # channel id
         compiled_filter = compile("^$")
         return compiled_filter
 
     # Last char is | so remove it
     full_filter = full_filter[:-1]
-    # all channel id are matched in lower case so creating the filter in lowercase too
+    # all channel id are matched in lower case so creating the filter in
+    # lowercase too
     full_filter = full_filter.lower()
-    # channel_id_filter.conf file exist but is empty, it has only comments, or only invalid regex
+    # channel_id_filter.conf file exist but is empty, it has only comments, or
+    # only invalid regex
     if len(full_filter) == 0:
         # full_filter is empty returning dummy filter
         compiled_filter = compile("^$")
     else:
         try:
             compiled_filter = compile(full_filter)
-        except:
-            print("[EPGImport] ERROR: final regex " + full_filter + " doesn't compile properly.", file=log)
-            # Return a dummy filter  (empty line filter) all accepted except empty channel id
+        except BaseException:
+            print(
+                "[EPGImport] ERROR: final regex " +
+                full_filter +
+                " doesn't compile properly.",
+                file=log)
+            # Return a dummy filter  (empty line filter) all accepted except
+            # empty channel id
             compiled_filter = compile("^$")
         else:
-            print("[EPGImport] INFO : final regex " + full_filter + " compiled successfully.", file=log)
+            print(
+                "[EPGImport] INFO : final regex " +
+                full_filter +
+                " compiled successfully.",
+                file=log)
 
     return compiled_filter
 
@@ -184,18 +208,25 @@ class EPGChannel:
                     filter_result = channel_id_filter.match(id_channel)
                     if filter_result and FilterChannelEnabled:
                         if filter_result.group():
-                            print("[EPGImport] INFO : skipping " + filter_result.group() + " due to channel_id_filter.conf", file=log)
+                            print(
+                                "[EPGImport] INFO : skipping " +
+                                filter_result.group() +
+                                " due to channel_id_filter.conf",
+                                file=log)
                         if id_channel and ref:
                             if filterCallback(ref):
                                 if id_channel in self.items:
                                     try:
                                         if ref in self.items[id_channel]:
                                             # deduplicate before remove
-                                            unique_refs = list(dict.fromkeys(self.items[id_channel]))
+                                            unique_refs = list(
+                                                dict.fromkeys(self.items[id_channel]))
                                             unique_refs.remove(ref)
                                             self.items[id_channel] = unique_refs
                                     except Exception as e:
-                                        print("[EPGImport] failed to remove from list " + str(self.items[id_channel]) + " ref " + ref + " Error: " + str(e), file=log)
+                                        print(
+                                            "[EPGImport] failed to remove from list " + str(
+                                                self.items[id_channel]) + " ref " + ref + " Error: " + str(e), file=log)
                     else:
                         if id_channel and ref:
                             if filterCallback(ref):
@@ -203,11 +234,17 @@ class EPGChannel:
                                     self.items[id_channel] = []
                                 self.items[id_channel].append(ref)
                                 # deduplicate just once here
-                                self.items[id_channel] = list(dict.fromkeys(self.items[id_channel]))
+                                self.items[id_channel] = list(
+                                    dict.fromkeys(self.items[id_channel]))
 
                 elem.clear()
         except Exception as e:
-            print("[EPGImport] failed to parse", downloadedFile, "Error:", e, file=log)
+            print(
+                "[EPGImport] failed to parse",
+                downloadedFile,
+                "Error:",
+                e,
+                file=log)
             import traceback
             traceback.print_exc()
 
@@ -221,7 +258,9 @@ class EPGChannel:
             customFile = "/etc/epgimport/rytec.channels.xml"
 
         if exists(customFile):
-            print("[EPGImport] Parsing channels from '%s'" % customFile, file=log)
+            print(
+                "[EPGImport] Parsing channels from '%s'" %
+                customFile, file=log)
             self.parse(filterCallback, customFile, filterCustomChannel)
         if downloadedFile is not None:
             self.mtime = time()
@@ -229,7 +268,7 @@ class EPGChannel:
         elif (len(self.urls) == 1) and isLocalFile(self.urls[0]):
             try:
                 mtime = getmtime(self.urls[0])
-            except:
+            except BaseException:
                 mtime = None
             if (not self.mtime) or (mtime is not None and self.mtime < mtime):
                 self.parse(filterCallback, self.urls[0], True)
@@ -246,7 +285,8 @@ class EPGChannel:
         return None
 
     def __repr__(self):
-        return "EPGChannel(urls=%s, channels=%s, mtime=%s)" % (self.urls, self.items and len(self.items), self.mtime)
+        return "EPGChannel(urls=%s, channels=%s, mtime=%s)" % (
+            self.urls, self.items and len(self.items), self.mtime)
 
 
 class EPGSource:
@@ -273,7 +313,10 @@ def enumSourcesFile(sourcefile, filter=None, categories=False):
                     if elem.tag == "source":
                         # Calculate custom time offset in minutes
                         try:
-                            offset = int(elem.get("offset", "+0000")) * 3600 // 100
+                            offset = int(
+                                elem.get(
+                                    "offset",
+                                    "+0000")) * 3600 // 100
                         except ValueError:
                             offset = 0  # Default offset if parsing fails
 
@@ -285,7 +328,8 @@ def enumSourcesFile(sourcefile, filter=None, categories=False):
                     elif elem.tag == "channel":
                         name = elem.get("name")
                         if name:
-                            urls = [e.text.strip() for e in elem.findall("url")]
+                            urls = [e.text.strip()
+                                    for e in elem.findall("url")]
                             if name in channelCache:
                                 channelCache[name].urls = urls
                             else:
@@ -301,7 +345,11 @@ def enumSourcesFile(sourcefile, filter=None, categories=False):
                     if categories:
                         yield category
     except Exception as e:
-        print("[EPGImport] Error reading source file:", sourcefile, "Error:", e)
+        print(
+            "[EPGImport] Error reading source file:",
+            sourcefile,
+            "Error:",
+            e)
 
 
 def enumSources(path, filter=None, categories=False):
@@ -313,7 +361,12 @@ def enumSources(path, filter=None, categories=False):
                     for s in enumSourcesFile(sourcefile, filter, categories):
                         yield s
                 except Exception as e:
-                    print("[EPGImport] failed to open", sourcefile, "Error:", e, file=log)
+                    print(
+                        "[EPGImport] failed to open",
+                        sourcefile,
+                        "Error:",
+                        e,
+                        file=log)
     except Exception as e:
         print("[EPGImport] failed to list", path, "Error:", e, file=log)
 

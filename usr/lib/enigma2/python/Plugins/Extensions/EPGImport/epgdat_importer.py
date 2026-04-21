@@ -48,7 +48,7 @@ class epgdatclass:
         try:
             self.commitService()
             self.epg.final_process()
-        except:
+        except BaseException:
             print("[EPGImport] Failure in epg_done")
             import traceback
             traceback.print_exc()
